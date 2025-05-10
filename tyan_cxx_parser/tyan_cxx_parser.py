@@ -12,6 +12,7 @@ class CodeItemType(Enum):
     DECLARE_CLASS = "<declare_class>"
     FUNCTION = "<function>"
     IF = "<if>"
+    FOR = "<for>"
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
     VAR_ADD_SELF = "<var_add_self>"
@@ -54,13 +55,16 @@ def found_op(line: str, op: str) -> bool:
 
 
 class CodeItem:
-    def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str]):
+    def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str],
+                 parent: "CodeItem" = None):
         self.item_type: CodeItemType = item_type
         self.head_content: List[str] = head_content
         self.body_content: List[str] = body_content
         self.parts: List[CodeItem] = []
+        self.parent: "CodeItem" = parent
 
     def append_part(self, new_item: "CodeItem"):
+        new_item.parent = self
         self.parts.append(new_item)
 
     def parse_body(self):
@@ -135,6 +139,13 @@ class CodeItem:
                 self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
                 continue
 
+            # schema11: for
+            if line.startswith("for ("):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemFor(self.body_content[from_line:head_end_line],
+                                             self.body_content[head_end_line:to_line]))
+                continue
+
             # print(line)
 
             # assert False
@@ -195,6 +206,11 @@ class CodeItemIf(CodeItem):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
 
+class CodeItemFor(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.FOR, head_content, body_content)
+
+
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
@@ -238,6 +254,7 @@ def main():
     src_code: str = src_code.replace("{", "{\n")
     src_code: str = src_code.replace("}", "\n}")
     src_code: str = src_code.replace("if(", "if (")
+    src_code: str = src_code.replace("for(", "for (")
     raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
 
     code_tree: CodeItem = CodeItemSourceCode(raw_content)
