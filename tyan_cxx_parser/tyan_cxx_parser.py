@@ -36,6 +36,7 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
         remain_depth += line.count(left_bracket) - line.count(right_bracket)
     return from_line, head_end_line, to_line
 
+
 def found_op(line: str, op: str) -> bool:
     if len(line) <= len(op) + 2:
         return False
@@ -50,6 +51,7 @@ def found_op(line: str, op: str) -> bool:
             continue
         return True
     return False
+
 
 class CodeItem:
     def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str]):
@@ -95,19 +97,18 @@ class CodeItem:
             # schema5: namespace
             if line.startswith("namespace "):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
-                self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
-                                                  self.body_content[head_end_line:to_line]))
+                self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
+                                                   self.body_content[head_end_line:to_line]))
                 print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
-            if line.startswith("if (") != -1:
+            if line.startswith("if ("):
                 # todo: simple if without bracket
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
-                                                  self.body_content[head_end_line:to_line]))
+                                            self.body_content[head_end_line:to_line]))
                 print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
-
 
             # schema6: declare class
             if line.startswith("class ") and line.find(";") != -1:
@@ -149,11 +150,16 @@ class CodeItem:
             result += part.print_struct()
         return result
 
-    def print(self) -> str:
-        result = "\n".join(self.head_content)
-        for part in self.parts:
+    def print(self, depth: int = -2) -> str:
+        result = "\n"
+        result += "  " * depth
+        result += f"/* {self.item_type.value} */"
+        for line in self.head_content:
             result += "\n"
-            result += part.print()
+            result += "  " * depth
+            result += line
+        for part in self.parts:
+            result += part.print(depth + 2)
         return result
 
 
@@ -176,6 +182,13 @@ class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
 
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
 
 class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
@@ -191,17 +204,21 @@ class CodeItemSourceCode(CodeItem):
     def __init__(self, body_content: List[str]):
         super().__init__(CodeItemType.CXX_SOURCE, [], body_content)
 
+
 class CodeItemDeclareClass(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.DECLARE_CLASS, head_content, [])
+
 
 class CodeItemVarSet(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.VAR_SET, head_content, [])
 
+
 class CodeItemVarAddSelf(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.VAR_ADD_SELF, head_content, [])
+
 
 class CodeItemVarSubSelf(CodeItem):
     def __init__(self, head_content: List[str]):
@@ -223,11 +240,13 @@ def main():
     src_code: str = src_code.replace("if(", "if (")
     raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
 
-    code_tree = CodeItemSourceCode(raw_content)
+    code_tree: CodeItem = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
     with open(args.dst_path, "w", encoding="utf-8") as dst_file:
         dst_file.write(code_tree.print())
+    with open(args.dst_path + ".tyan", "w", encoding="utf-8") as dst_file:
+        dst_file.write(code_tree.print_struct())
 
 
 if __name__ == '__main__':
