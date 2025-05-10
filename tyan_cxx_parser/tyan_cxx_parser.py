@@ -11,6 +11,7 @@ class CodeItemType(Enum):
     COMMENT_LINE = "<comment>"
     DECLARE_CLASS = "<declare_class>"
     FUNCTION = "<function>"
+    IF = "<if>"
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
     VAR_ADD_SELF = "<var_add_self>"
@@ -99,6 +100,15 @@ class CodeItem:
                 print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
+            if line.startswith("if (") != -1:
+                # todo: simple if without bracket
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
+                                                  self.body_content[head_end_line:to_line]))
+                print(f"{from_line}, {head_end_line}, {to_line}")
+                continue
+
+
             # schema6: declare class
             if line.startswith("class ") and line.find(";") != -1:
                 self.append_part(CodeItemDeclareClass(self.body_content[from_line:to_line]))
@@ -124,8 +134,9 @@ class CodeItem:
                 self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
                 continue
 
-            print(line)
-            assert False
+            # print(line)
+
+            # assert False
         for part in self.parts:
             part.parse()
 
@@ -136,6 +147,13 @@ class CodeItem:
         result = f"{self.item_type.value}\n"
         for part in self.parts:
             result += part.print_struct()
+        return result
+
+    def print(self) -> str:
+        result = "\n".join(self.head_content)
+        for part in self.parts:
+            result += "\n"
+            result += part.print()
         return result
 
 
@@ -157,6 +175,11 @@ class CodeItemCommentLine(CodeItem):
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
+
+
+class CodeItemIf(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.IF, head_content, body_content)
 
 
 class CodeItemNamespace(CodeItem):
@@ -197,13 +220,14 @@ def main():
 
     src_code: str = src_code.replace("{", "{\n")
     src_code: str = src_code.replace("}", "\n}")
+    src_code: str = src_code.replace("if(", "if (")
     raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
 
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
     with open(args.dst_path, "w", encoding="utf-8") as dst_file:
-        dst_file.write(code_tree.print_struct())
+        dst_file.write(code_tree.print())
 
 
 if __name__ == '__main__':
