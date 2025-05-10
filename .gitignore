@@ -1,0 +1,16 @@
+# Ignore Python compiled files
+__pycache__/
+*.py[cod]
+
+# Ignore IDE-specific files and directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore build and temporary files
+build/
+bin/
+obj/
+*.log
+tyan_cxx_parser/local_test
