@@ -1,5 +1,6 @@
 import argparse
 from math import remainder
+from types import new_class
 from typing import List
 from enum import Enum
 
@@ -17,6 +18,7 @@ class CodeItemType(Enum):
     VAR_SET = "<var_set>"
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
+    ASSERT = "<assert>"
     UNKNOWN = "<unknown>"
 
 
@@ -26,6 +28,8 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
     remain_depth = line.count(left_bracket) - line.count(right_bracket)
     # go through function header
     while remain_depth == 0:
+        if line.count(left_bracket):
+            break
         line = raw_content[to_line]
         to_line += 1
         remain_depth += line.count(left_bracket) - line.count(right_bracket)
@@ -55,16 +59,17 @@ def found_op(line: str, op: str) -> bool:
 
 
 class CodeItem:
-    def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str],
-                 parent: "CodeItem" = None):
+    def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str]):
         self.item_type: CodeItemType = item_type
         self.head_content: List[str] = head_content
         self.body_content: List[str] = body_content
         self.parts: List[CodeItem] = []
-        self.parent: "CodeItem" = parent
+        self.parent: "CodeItem" = None
+        self.is_under_function = False
 
     def append_part(self, new_item: "CodeItem"):
         new_item.parent = self
+        new_item.is_under_function = self.is_under_function or isinstance(new_item, CodeItemFunction)
         self.parts.append(new_item)
 
     def parse_body(self):
@@ -74,6 +79,8 @@ class CodeItem:
             to_line = from_line + 1
 
             line = self.body_content[from_line]
+            if line.find("assert") != -1:
+                print("hhhh")
 
             # schema1: include
             if line.startswith("#include"):
@@ -91,7 +98,7 @@ class CodeItem:
                 continue
 
             # schema4: function
-            if line.find("(") != -1 and line.find(";") == -1:
+            if not self.is_under_function and line.find("(") != -1 and line.find(";") == -1:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
                                                   self.body_content[head_end_line:to_line]))
@@ -103,6 +110,14 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
                                                    self.body_content[head_end_line:to_line]))
+                print(f"{from_line}, {head_end_line}, {to_line}")
+                continue
+
+            # schema: assert
+            if line.startswith("assert("):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content,
+                                                                             '(', ')')
+                self.append_part(CodeItemAssert(self.body_content[from_line:to_line], []))
                 print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
@@ -205,15 +220,40 @@ class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
 
 class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
 
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
 
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
+
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
+class CodeItemAssert(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.ASSERT, head_content, body_content)
 
 
 class CodeItemSourceCode(CodeItem):
