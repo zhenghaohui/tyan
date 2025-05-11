@@ -107,6 +107,7 @@ class CodeItem:
         self.parts: List[CodeItem] = []
         self.parent: "CodeItem" = None
         self.is_under_function = False
+        self.need_domain_guard = False
         self.depth = 0
 
     def append_part(self, new_item: "CodeItem"):
@@ -237,11 +238,11 @@ class CodeItem:
         result = ""
         line_prefix = line_prefix_depth(depth)
         guard_uuid = get_painter_guard_uuid()
-        result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
         log_line = "".join(self.head_content)
         log_line = log_line.replace('"', '\\"')
-
         result += f"{line_prefix}LogLine(\"{log_line}\");"
+        if self.need_domain_guard:
+            result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
         return result
 
     def print_head(self, add_tyan_code=False) -> str:
@@ -289,6 +290,7 @@ class CodeItemFunction(CodeItem):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
         self.head_content = ["".join([remove_comment(line) for line in self.head_content])]
         self.params = None
+        self.need_domain_guard = True
 
     def print_head(self, add_tyan_code=False):
         result = super().print_head()
@@ -331,6 +333,8 @@ class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
+        self.need_domain_guard = True
+
     def print_head(self, add_tyan_code=False) -> str:
         result = super().print_head(add_tyan_code)
         if add_tyan_code:
@@ -348,6 +352,7 @@ class CodeItemIf(CodeItem):
 class CodeItemElse(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.ELSE, head_content, body_content)
+        self.need_domain_guard = True
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
@@ -360,6 +365,7 @@ class CodeItemElse(CodeItem):
 class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
+        self.need_domain_guard = True
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
