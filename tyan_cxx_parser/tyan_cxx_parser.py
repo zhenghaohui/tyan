@@ -30,19 +30,26 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
                              left_bracket: chr = '{', right_bracket: chr = '}') -> (int, int, int):
     line = raw_content[from_line]
     remain_depth = line.count(left_bracket) - line.count(right_bracket)
+    remain_depth_par = line.count("(") - line.count(")")
     # go through function header
     while remain_depth == 0:
         if line.count(left_bracket):
             break
+        if line[-1] == ";" and not remain_depth_par:
+            break
         line = raw_content[to_line]
         to_line += 1
         remain_depth += line.count(left_bracket) - line.count(right_bracket)
+        remain_depth_par += line.count("(") - line.count(")")
     head_end_line = to_line
-    # go through function body
-    while remain_depth > 0:
-        line = raw_content[to_line]
-        to_line += 1
-        remain_depth += line.count(left_bracket) - line.count(right_bracket)
+
+    if line.count(left_bracket):
+        # go through function body
+        while remain_depth > 0:
+            line = raw_content[to_line]
+            to_line += 1
+            remain_depth += line.count(left_bracket) - line.count(right_bracket)
+
     return from_line, head_end_line, to_line
 
 
@@ -254,9 +261,10 @@ class CodeItemIf(CodeItem):
 
     def print(self, depth: int = -2) -> str:
         result = super().print(depth)
-        result += "\n"
-        result += "  " * depth
-        result += "}"
+        if any("{" in line for line in self.head_content):
+            result += "\n"
+            result += "  " * depth
+            result += "}"
         return result
 
 
@@ -266,9 +274,10 @@ class CodeItemElse(CodeItem):
 
     def print(self, depth: int = -2) -> str:
         result = super().print(depth)
-        result += "\n"
-        result += "  " * depth
-        result += "}"
+        if any("{" in line for line in self.head_content):
+            result += "\n"
+            result += "  " * depth
+            result += "}"
         return result
 
 
@@ -278,9 +287,10 @@ class CodeItemFor(CodeItem):
 
     def print(self, depth: int = -2) -> str:
         result = super().print(depth)
-        result += "\n"
-        result += "  " * depth
-        result += "}"
+        if any("{" in line for line in self.head_content):
+            result += "\n"
+            result += "  " * depth
+            result += "}"
         return result
 
 
@@ -372,6 +382,8 @@ def main():
     src_code: str = src_code.replace("}", "\n}\n")
     src_code: str = src_code.replace("if(", "if (")
     src_code: str = src_code.replace("for(", "for (")
+    src_code: str = src_code.replace(" else", "\nelse")
+    src_code: str = src_code.replace(";else", ";\nelse")
     raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
 
     code_tree: CodeItem = CodeItemSourceCode(raw_content)
