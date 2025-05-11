@@ -34,6 +34,7 @@ class CodeItemType(Enum):
     RETURN  = "<return>"
     PURE_DOMAIN = "<pure_domain>"
     ELSE = "<else>"
+
     UNKNOWN = "<unknown>"
 
 
@@ -70,6 +71,11 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
         line = raw_content[to_line]
         to_line += 1
         if line.find(';') != -1:
+            break
+        special_macro = line.replace(" ", "")
+        if special_macro in ["public:", "private:", "procted:"]:
+            break
+        if special_macro.startswith("template<"):
             break
     return from_line, to_line
 
