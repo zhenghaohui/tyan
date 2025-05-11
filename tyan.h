@@ -51,18 +51,18 @@ namespace tyan {
 
         template<typename T>
         void log_value(T &new_val) {
-            log(std::string("[") + current_time() + "] " + ::tyan::to_string(new_val));
+            log(::tyan::to_string(new_val));
         }
 
         void log_value(const std::string &value_str) {
-            log(std::string("[") + current_time() + "] " + value_str);
+            log(value_str);
         }
 
         void log_var(const std::string &name) {
             if (this->var_map.count(name)) {
-                log(std::string("[") + current_time() + "] " + name + ":" + this->var_map[name]);
+                log(name + ":" + this->var_map[name]);
             } else {
-                log(std::string("[") + current_time() + "] " + name);
+                log(name);
             }
         }
 
@@ -91,7 +91,7 @@ namespace tyan {
             if (!tmp.empty()) {
                 oss << tmp;
             }
-            log(std::string("[") + current_time() + "] " + oss.str());
+            log(oss.str());
         }
 
         ~Painter() {
@@ -100,15 +100,11 @@ namespace tyan {
 
     private:
         void log(const std::string &message) {
-            std::cout << message << std::endl;
-        }
-
-        std::string current_time() {
             auto now = std::time(nullptr);
             auto local_time = *std::localtime(&now);
             std::ostringstream oss;
             oss << std::put_time(&local_time, "%H:%M:%S");
-            return oss.str();
+            std::cout << "[" << oss.str() << "] " << message << std::endl;
         }
     };
 
