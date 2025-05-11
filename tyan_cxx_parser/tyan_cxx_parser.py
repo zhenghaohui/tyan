@@ -14,6 +14,7 @@ class CodeItemType(Enum):
     FUNCTION = "<function>"
     IF = "<if>"
     FOR = "<for>"
+    SINGLE_LINE = "<single-line>"
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
     VAR_ADD_SELF = "<var_add_self>"
@@ -41,6 +42,15 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
         remain_depth += line.count(left_bracket) - line.count(right_bracket)
     return from_line, head_end_line, to_line
 
+
+def go_through_single_line(from_line: int, raw_content: List[str]) -> (int, int):
+    to_line = from_line
+    while to_line < len(raw_content):
+        line = raw_content[to_line]
+        to_line += 1
+        if line.find(';') != -1:
+            break
+    return from_line, to_line
 
 def found_op(line: str, op: str) -> bool:
     if len(line) <= len(op) + 2:
@@ -139,20 +149,20 @@ class CodeItem:
                 # just ignore
                 continue
 
-            # schema8: =
-            if found_op(line, "="):
-                self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
-                continue
-
-            # schema9: +=
-            if found_op(line, "+="):
-                self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
-                continue
-
-            # schema10: -=
-            if found_op(line, "-="):
-                self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
-                continue
+            # # schema8: =
+            # if found_op(line, "="):
+            #     self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
+            #     continue
+            #
+            # # schema9: +=
+            # if found_op(line, "+="):
+            #     self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
+            #     continue
+            #
+            # # schema10: -=
+            # if found_op(line, "-="):
+            #     self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
+            #     continue
 
             # schema11: for
             if line.startswith("for ("):
@@ -161,7 +171,10 @@ class CodeItem:
                                              self.body_content[head_end_line:to_line]))
                 continue
 
-            # print(line)
+            # schema: single line
+            from_line, to_line = go_through_single_line(from_line, self.body_content)
+            self.append_part(CodeItemSingleLine(self.body_content[from_line:to_line]))
+
 
             # assert False
         for part in self.parts:
@@ -238,6 +251,10 @@ class CodeItemFor(CodeItem):
         result += "  " * depth
         result += "}"
         return result
+
+class CodeItemSingleLine(CodeItem):
+    def __init__(self, head_content: List[str]):
+        super().__init__(CodeItemType.SINGLE_LINE, head_content, [])
 
 
 class CodeItemNamespace(CodeItem):
