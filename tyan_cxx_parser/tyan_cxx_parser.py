@@ -62,7 +62,17 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
             break
     return from_line, to_line
 
+def extract_skeleton(line: str) -> str:
+    result = ""
+    for chr in line:
+        if chr == '#' or chr == "'" or chr == '(' or chr == "{":
+            break
+        result += chr
+    result += " "
+    return result
+
 def found_op(line: str, op: str) -> bool:
+    line = extract_skeleton(line)
     if len(line) <= len(op) + 2:
         return False
     for idx in range(0, len(line)):
