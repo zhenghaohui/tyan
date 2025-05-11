@@ -22,6 +22,7 @@ class CodeItemType(Enum):
     DECLARE_CLASS = "<declare_class>"
     FUNCTION = "<function>"
     IF = "<if>"
+    WHILE = "<WHILE>"
     FOR = "<for>"
     SINGLE_SENTENCE = "<single-sentence>"
     NAMESPACE = "<namespace>"
@@ -214,9 +215,16 @@ class CodeItem:
                 continue
 
             # schema11: for
-            if line.startswith("for ("):
+            if line[:10].replace(' ', '').startswith("for("):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemFor(self.body_content[from_line:head_end_line],
+                                             self.body_content[head_end_line:to_line]))
+                continue
+
+            # schema11: while
+            if line[:10].replace(' ', '').startswith("while("):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemWhile(self.body_content[from_line:head_end_line],
                                              self.body_content[head_end_line:to_line]))
                 continue
 
@@ -417,6 +425,18 @@ class CodeItemElse(CodeItem):
 class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
+        self.need_domain_guard = True
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        if any("{" in line for line in self.head_content):
+            result += line_prefix_depth(self.depth) + "}"
+
+        return result
+
+class CodeItemWhile(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.WHILE, head_content, body_content)
         self.need_domain_guard = True
 
     def print(self, add_tyan_code=False) -> str:
