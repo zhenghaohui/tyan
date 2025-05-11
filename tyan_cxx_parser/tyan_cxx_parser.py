@@ -391,6 +391,9 @@ def main():
     write_file(args.dst_path + ".tyan", code_tree.print_struct())
     write_file(args.dst_path + ".std", standard_code(code_tree.print()))
 
+    # Verify that the standardized source and output match
+    assert read_file(args.src_path + ".std") == read_file(args.dst_path + ".std"), "Standardized files do not match!"
+
 
 def read_file(file_path: str) -> str:
     """Reads and returns the content of a file."""
