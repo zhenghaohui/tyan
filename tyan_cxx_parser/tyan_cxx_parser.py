@@ -1,4 +1,5 @@
 import argparse
+from idlelib.debugger_r import restart_subprocess_debugger
 from math import remainder
 from types import new_class
 from typing import List
@@ -105,11 +106,16 @@ class CodeItem:
         self.parts: List[CodeItem] = []
         self.parent: "CodeItem" = None
         self.is_under_function = False
+        self.depth = 0
 
     def append_part(self, new_item: "CodeItem"):
         new_item.parent = self
         new_item.is_under_function = self.is_under_function or isinstance(new_item, CodeItemFunction)
+        new_item.depth = self.depth + 1
         self.parts.append(new_item)
+
+    def parse_head(self):
+        pass
 
     def parse_body(self):
         to_line = 0
@@ -220,17 +226,23 @@ class CodeItem:
             part.parse()
 
     def parse(self):
+        self.parse_head()
         self.parse_body()
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
+    def print_head(self) -> str:
         result = ""
         for line in self.head_content:
             result += "\n"
-            result += "  " * depth
+            result += "  " * self.depth
             result += line
         result += f" /* {self.item_type.value} */"
+        return result
+
+    def print(self, add_tyan_code=False) -> str:
+        result = self.print_head()
+
         for part in self.parts:
-            result += part.print(depth + 2, add_tyan_code)
+            result += part.print(add_tyan_code)
         return result
 # todo: return Status::NotSupported("CompactionFilter::IgnoreSnapshots() = false is not supported ""anymore."); /* <var_set> */
 
@@ -252,24 +264,48 @@ class CodeItemCommentLine(CodeItem):
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
+        self.head_content = ["".join([remove_comment(line) for line in self.head_content])]
+        self.params = None
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
+    def print_head(self):
+        result = super().print_head()
+        result += "\n" + "  " * (self.depth + 1) + "/* params: " + ", ".join(self.params) + " */"
+        return result
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
         result += "\n"
-        result += "  " * depth
+        result += "  " * self.depth
         result += "}"
         return result
 
+    def extract_params(self, content: str) -> List[str]:
+        parts = content.split(",")
+        params_chr_set = "abcdefghijklmnopqrstuvwxyz_0123456789"
+        result = []
+        for part in parts:
+            part = part[::-1].strip("{)")
+            name = ""
+            for chr in part:
+                if chr not in params_chr_set:
+                    break
+                name += chr
+            name = name[::-1]
+            result.append(name)
+        return result
+
+    def parse_head(self):
+        self.params = self.extract_params(self.head_content[0])
 
 class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
             result += "\n"
-            result += "  " * depth
+            result += "  " * self.depth
             result += "}"
         return result
 
@@ -278,11 +314,11 @@ class CodeItemElse(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.ELSE, head_content, body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
             result += "\n"
-            result += "  " * depth
+            result += "  " * self.depth
             result += "}"
         return result
 
@@ -291,11 +327,11 @@ class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
             result += "\n"
-            result += "  " * depth
+            result += "  " * self.depth
             result += "}"
         return result
 
@@ -308,9 +344,9 @@ class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
-        result += "\n" + "  " * depth + "}"
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        result += "\n" + "  " * self.depth + "}"
         return result
 
 class CodeItemAssert(CodeItem):
@@ -322,12 +358,12 @@ class CodeItemSourceCode(CodeItem):
     def __init__(self, body_content: List[str]):
         super().__init__(CodeItemType.CXX_SOURCE, [], body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
+    def print(self, add_tyan_code=False) -> str:
         result = ""
         if add_tyan_code:
-            result += "\n" + "  " * depth
+            result += "\n" + "  " * self.depth
             result += '#include "tyan.h"'
-        result += super().print(depth, add_tyan_code)
+        result += super().print(add_tyan_code)
         return result
 
 
@@ -355,22 +391,25 @@ class CodeItemPureDomain(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.PURE_DOMAIN, head_content, body_content)
 
-    def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = super().print(depth)
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
         result += "\n"
-        result += "  " * depth
+        result += "  " * self.depth
         result += "}"
         return result
 
-
-def standard_code(content: str) -> str:
+def remove_comment(content: str) -> str:
     # Remove block comments
     content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     # Remove line comments
     content = re.sub(r'//.*', '', content)
+    return content
+
+
+def standard_code(content: str) -> str:
+    content = remove_comment(content)
     # Remove all whitespace characters (spaces, tabs, newlines)
     content = ''.join(content.split())
-
     # Insert a newline character every 100 characters
     content = '\n'.join([content[i:i + 100] for i in range(0, len(content), 100)])
     return content
@@ -398,7 +437,7 @@ def main():
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    write_file(args.dst_path, code_tree.print(-2, True))
+    write_file(args.dst_path, code_tree.print(True))
     write_file(args.dst_path + ".std", standard_code(code_tree.print()))
 
     # Verify that the standardized source and output match
