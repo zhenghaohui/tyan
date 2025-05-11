@@ -229,18 +229,16 @@ class CodeItem:
         self.parse_head()
         self.parse_body()
 
-    def print_head(self) -> str:
+    def print_head(self, add_tyan_code=False) -> str:
         result = ""
+        line_prefix = line_prefix_depth(self.depth)
         for line in self.head_content:
-            result += "\n"
-            result += "  " * self.depth
-            result += line
+            result += f"{line_prefix}{line}"
         result += f" /* {self.item_type.value} */"
         return result
 
     def print(self, add_tyan_code=False) -> str:
-        result = self.print_head()
-
+        result = self.print_head(add_tyan_code)
         for part in self.parts:
             result += part.print(add_tyan_code)
         return result
@@ -260,6 +258,8 @@ class CodeItemCommentLine(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.COMMENT_LINE, head_content, [])
 
+def line_prefix_depth(depth: int) -> str:
+    return "\n" + "  " * depth
 
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
@@ -267,9 +267,14 @@ class CodeItemFunction(CodeItem):
         self.head_content = ["".join([remove_comment(line) for line in self.head_content])]
         self.params = None
 
-    def print_head(self):
+    def print_head(self, add_tyan_code=False):
         result = super().print_head()
-        result += "\n" + "  " * (self.depth + 1) + "/* params: " + ", ".join(self.params) + " */"
+        line_prefix = line_prefix_depth(self.depth + 1)
+        result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
+        if add_tyan_code:
+            result += f"{line_prefix}tyan::Painter painter;"
+            for param in self.params:
+                result += f"{line_prefix}TyanCatch({param});"
         return result
 
     def print(self, add_tyan_code=False) -> str:
