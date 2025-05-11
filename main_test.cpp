@@ -35,12 +35,10 @@
   }
   struct Point{ /* <struct> */
     int x, y; /* <single-sentence> */
-    LogLine("int x, y;");
     // 构造函数 /* <comment> */
     Point(int x = 0, int y = 0) : x(x), y(y){ /* <function> */
-      /* params: 0, x, y */
+      /* params: x, y */
       TyanMethod();
-      TyanCatch(0);
       TyanCatch(x);
       TyanCatch(y);
       LogLine("Point(int x = 0, int y = 0) : x(x), y(y){");
@@ -61,7 +59,6 @@
     }
   }
   ; /* <single-sentence> */
-  LogLine(";");
   int main(){ /* <function> */
     /* params:  */
     TyanMethod();

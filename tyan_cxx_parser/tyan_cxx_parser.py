@@ -6,7 +6,13 @@ from typing import List
 from enum import Enum
 import re
 
-PARAM_CHAR_SET = "abcdefghijklmnopqrstuvwxyz_0123456789"
+PARAM_CHAR_SET = {
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
+}
 
 class CodeItemType(Enum):
     CXX_SOURCE = "<cxx_source>"
@@ -257,7 +263,8 @@ class CodeItem:
         guard_uuid = get_painter_guard_uuid()
         log_line = "".join(self.head_content)
         log_line = log_line.replace('"', '\\"')
-        result += f"{line_prefix}LogLine(\"{log_line}\");"
+        if self.is_under_function:
+            result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
             result += f"{line_prefix}TyanGuard({guard_uuid});"
         return result
@@ -328,22 +335,34 @@ class CodeItemFunction(CodeItem):
         return result
 
     def extract_params(self, content: str) -> List[str]:
+        param_beg = content.find('(')
+        param_end = param_beg + 1
+        depth = 1
+        while depth > 0:
+            depth += (content[param_end] == '(') - (content[param_end] == ')')
+            param_end += 1
+        content = content[param_beg:param_end]
+
         parts = content.split(",")
         result = []
         for part in parts:
-            part = part[::-1].strip("{)")
+            pos = part.find('=') # drop right part
+            if pos != -1:
+                part = part[:pos]
+            part = part[::-1].strip("{) ")
             name = ""
-            for chr in part:
-                if chr not in PARAM_CHAR_SET:
+            for char in part:
+                if char not in PARAM_CHAR_SET:
                     break
-                name += chr
+                name += char
             name = name[::-1]
+            # print("!!! : " + name)
             if len(name) > 0:
                 result.append(name)
         return result
 
     def parse_head(self):
-        self.params = self.extract_params(self.head_content[0])
+        self.params = self.extract_params("".join(self.head_content))
 
 class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):

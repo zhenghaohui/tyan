@@ -7,8 +7,14 @@
 #include <stdint-gcc.h>
 
 namespace tyan {
-    inline std::string to_string(const int num) {
-        return std::to_string(num);
+    template<typename T>
+    std::string to_string(T* num) {
+        return "<ptr>";
+    }
+
+    template<>
+    inline std::string to_string<int>(int* num) {
+        return std::to_string(*num);
     }
 
     class ThreadContext {
@@ -37,9 +43,8 @@ namespace tyan {
         std::map<std::string, std::string> var_map;
 
         template<typename T>
-        T &catch_var(const std::string &name, T &new_val) {
+        void catch_var(const std::string &name, T *new_val) {
             this->var_map[name] = ::tyan::to_string(new_val);
-            return new_val;
         }
 
         template<typename T>
@@ -104,5 +109,5 @@ namespace tyan {
 
 #define TyanMethod()    tyan::Painter tyan_painter
 #define TyanGuard(id)   tyan::PainterDomainGuard tyan_domain_guard_ ## id;
-#define TyanCatch(var)  tyan_painter.catch_var(#var, var)
+#define TyanCatch(var)  tyan_painter.catch_var(#var, &var)
 #define LogLine(line)   tyan_painter.log_line(line)
