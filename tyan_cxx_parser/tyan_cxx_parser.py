@@ -90,7 +90,7 @@ def found_op(line: str, op: str) -> bool:
 def short_head_content(content: List[str]) -> List[str] :
     updated_content = []
     for idx, line in enumerate(content):
-        if len(updated_content) == 0 or updated_content[-1].count("// ") or updated_content[-1].count("/*"):
+        if len(updated_content) == 0 or updated_content[-1].count("//") or updated_content[-1].count("/*"):
             updated_content.append(line)
             continue
         updated_content[-1] += line
