@@ -3,6 +3,7 @@ from math import remainder
 from types import new_class
 from typing import List
 from enum import Enum
+import re
 
 
 class CodeItemType(Enum):
@@ -14,12 +15,13 @@ class CodeItemType(Enum):
     FUNCTION = "<function>"
     IF = "<if>"
     FOR = "<for>"
-    SINGLE_LINE = "<single-line>"
+    SINGLE_SENTENCE = "<single-sentence>"
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
+    PURE_DOMAIN = "<pure_domain>"
     UNKNOWN = "<unknown>"
 
 
@@ -43,7 +45,7 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
     return from_line, head_end_line, to_line
 
 
-def go_through_single_line(from_line: int, raw_content: List[str]) -> (int, int):
+def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, int):
     to_line = from_line
     while to_line < len(raw_content):
         line = raw_content[to_line]
@@ -149,21 +151,6 @@ class CodeItem:
                 # just ignore
                 continue
 
-            # # schema8: =
-            # if found_op(line, "="):
-            #     self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
-            #     continue
-            #
-            # # schema9: +=
-            # if found_op(line, "+="):
-            #     self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
-            #     continue
-            #
-            # # schema10: -=
-            # if found_op(line, "-="):
-            #     self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
-            #     continue
-
             # schema11: for
             if line.startswith("for ("):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
@@ -171,9 +158,33 @@ class CodeItem:
                                              self.body_content[head_end_line:to_line]))
                 continue
 
+            # schema: pure domain
+            if line == "{":
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemPureDomain(self.body_content[from_line:head_end_line],
+                                                    self.body_content[head_end_line:to_line]))
+                continue
+
             # schema: single line
-            from_line, to_line = go_through_single_line(from_line, self.body_content)
-            self.append_part(CodeItemSingleLine(self.body_content[from_line:to_line]))
+            from_line, to_line = go_through_single_sentence(from_line, self.body_content)
+            line = "".join(self.body_content[from_line:to_line])
+
+            # schema: =
+            if found_op(line, "="):
+                self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
+                continue
+
+            # schema: +=
+            if found_op(line, "+="):
+                self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
+                continue
+
+            # schema10: -=
+            if found_op(line, "-="):
+                self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
+                continue
+
+            self.append_part(CodeItemSingleSentence(self.body_content[from_line:to_line]))
 
 
             # assert False
@@ -252,9 +263,10 @@ class CodeItemFor(CodeItem):
         result += "}"
         return result
 
-class CodeItemSingleLine(CodeItem):
+
+class CodeItemSingleSentence(CodeItem):
     def __init__(self, head_content: List[str]):
-        super().__init__(CodeItemType.SINGLE_LINE, head_content, [])
+        super().__init__(CodeItemType.SINGLE_SENTENCE, head_content, [])
 
 
 class CodeItemNamespace(CodeItem):
@@ -298,6 +310,31 @@ class CodeItemVarSubSelf(CodeItem):
         super().__init__(CodeItemType.VAR_SUB_SELF, head_content, [])
 
 
+class CodeItemPureDomain(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.PURE_DOMAIN, head_content, body_content)
+
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
+
+def standard_code(content: str) -> str:
+    # Remove block comments
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+    # Remove line comments
+    content = re.sub(r'//.*', '', content)
+    # Remove all whitespace characters (spaces, tabs, newlines)
+    content = ''.join(content.split())
+
+    # Insert a newline character every 100 characters
+    content = '\n'.join([content[i:i + 100] for i in range(0, len(content), 100)])
+    return content
+
+
 def main():
     parser = argparse.ArgumentParser(description='translate cxx src code into cxx-tyan src code')
     parser.add_argument('src_path', help='cxx源码输入文件路径')
@@ -308,8 +345,11 @@ def main():
     with open(args.src_path, "r", encoding="utf-8") as src_file:
         src_code = src_file.read()
 
-    src_code: str = src_code.replace("{", "{\n")
-    src_code: str = src_code.replace("}", "\n}")
+    with open(args.src_path + ".std", "w", encoding="utf-8") as dst_file:
+        dst_file.write(standard_code(src_code))
+
+    src_code: str = src_code.replace("{", "\n{\n")
+    src_code: str = src_code.replace("}", "\n}\n")
     src_code: str = src_code.replace("if(", "if (")
     src_code: str = src_code.replace("for(", "for (")
     raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
@@ -319,8 +359,12 @@ def main():
 
     with open(args.dst_path, "w", encoding="utf-8") as dst_file:
         dst_file.write(code_tree.print())
+
     with open(args.dst_path + ".tyan", "w", encoding="utf-8") as dst_file:
         dst_file.write(code_tree.print_struct())
+
+    with open(args.dst_path + ".std", "w", encoding="utf-8") as dst_file:
+        dst_file.write(standard_code(code_tree.print()))
 
 
 if __name__ == '__main__':
