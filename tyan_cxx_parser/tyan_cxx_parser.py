@@ -214,16 +214,15 @@ class CodeItem:
 
     def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = ""
-        result += "\n" + "  " * depth
-        result += f"/* {self.item_type.value} */"
         for line in self.head_content:
             result += "\n"
             result += "  " * depth
             result += line
+        result += f" /* {self.item_type.value} */"
         for part in self.parts:
             result += part.print(depth + 2, add_tyan_code)
         return result
-
+# todo: return Status::NotSupported("CompactionFilter::IgnoreSnapshots() = false is not supported ""anymore."); /* <var_set> */
 
 class CodeItemInclude(CodeItem):
     def __init__(self, head_content: List[str]):
