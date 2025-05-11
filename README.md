@@ -35,7 +35,7 @@ int main(){
   int add(int a:10, int b:20){
     return a:10 + b:20;
   int n = 3;
-  int result = fibonacci(n);
+  int result = fibonacci(n:3);
   int fibonacci(int n:3){
     return fibonacci(n:3 - 1) + fibonacci(n:3 - 2);
     int fibonacci(int n:2){
@@ -49,7 +49,7 @@ int main(){
     int fibonacci(int n:1){
       if (n:1 <= 1){
         return n:1;
-  std::cout << "The 10th Fibonacci number is: " << result << std::endl;
+  std::cout << "The 10th Fibonacci number is: " << result:2 << std::endl;
 The 10th Fibonacci number is: 2
   return 0;
 

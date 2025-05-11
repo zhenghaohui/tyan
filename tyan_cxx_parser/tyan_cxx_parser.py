@@ -6,6 +6,7 @@ from typing import List
 from enum import Enum
 import re
 
+PARAM_CHAR_SET = "abcdefghijklmnopqrstuvwxyz_0123456789"
 
 class CodeItemType(Enum):
     CXX_SOURCE = "<cxx_source>"
@@ -242,7 +243,7 @@ class CodeItem:
         log_line = log_line.replace('"', '\\"')
         result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
-            result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
+            result += f"{line_prefix}TyanGuard({guard_uuid});"
         return result
 
     def print_head(self, add_tyan_code=False) -> str:
@@ -297,7 +298,7 @@ class CodeItemFunction(CodeItem):
         line_prefix = line_prefix_depth(self.depth + 1)
         result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
         if add_tyan_code:
-            result += f"{line_prefix}tyan::Painter& tyan_painter = tyan::Painter::get();"
+            result += f"{line_prefix}TyanMethod();"
             for param in self.params:
                 result += f"{line_prefix}TyanCatch({param});"
             result += self.log_line(self.depth + 1)
@@ -312,13 +313,12 @@ class CodeItemFunction(CodeItem):
 
     def extract_params(self, content: str) -> List[str]:
         parts = content.split(",")
-        params_chr_set = "abcdefghijklmnopqrstuvwxyz_0123456789"
         result = []
         for part in parts:
             part = part[::-1].strip("{)")
             name = ""
             for chr in part:
-                if chr not in params_chr_set:
+                if chr not in PARAM_CHAR_SET:
                     break
                 name += chr
             name = name[::-1]
@@ -382,7 +382,10 @@ class CodeItemSingleSentence(CodeItem):
     def print_head(self, add_tyan_code=False) -> str:
         result = super().print_head(add_tyan_code)
         if add_tyan_code:
-            result = self.log_line(self.depth) + result
+            if self.item_type != CodeItemType.RETURN:
+                result += self.log_line(self.depth)
+            else:
+                result = self.log_line(self.depth) + result
         return result
 
 class CodeItemNamespace(CodeItem):
@@ -428,18 +431,47 @@ class CodeItemAssert(CodeItemSingleSentence):
         self.item_type = CodeItemType.ASSERT
 
 
-class CodeItemVarSet(CodeItemSingleSentence):
+class CodeItemVarModify(CodeItemSingleSentence): # pure
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.param_name = None
+
+    def _extract_param_from_line(self, line: str) -> str:
+        line = line[:line.find("=")] # left part
+        line = line[::-1] # reverse
+        cur = 0
+        while cur < len(line) and line[cur] not in PARAM_CHAR_SET: # drop others
+            cur += 1
+            continue
+        result = ""
+        while cur < len(line) and line[cur] in PARAM_CHAR_SET: # collect
+            result += line[cur]
+            cur += 1
+            continue
+        result = result[::-1] # reverse back
+        return result
+
+    def parse_head(self):
+        self.param_name = self._extract_param_from_line("".join(self.head_content))
+
+    def print_head(self, add_tyan_code=False) -> str:
+        result = super().print_head(add_tyan_code)
+        if add_tyan_code:
+            result += line_prefix_depth(self.depth) + f"TyanCatch({self.param_name});"
+        return result
+
+class CodeItemVarSet(CodeItemVarModify):
     def __init__(self, head_content: List[str]):
         super().__init__(head_content)
         self.item_type = CodeItemType.VAR_SET
 
 
-class CodeItemVarAddSelf(CodeItemSingleSentence):
+class CodeItemVarAddSelf(CodeItemVarModify):
     def __init__(self, head_content: List[str]):
         super().__init__(head_content)
         self.item_type = CodeItemType.VAR_ADD_SELF
 
-class CodeItemVarSubSelf(CodeItemSingleSentence):
+class CodeItemVarSubSelf(CodeItemVarModify):
     def __init__(self, head_content: List[str]):
         super().__init__(head_content)
         self.item_type = CodeItemType.VAR_SUB_SELF

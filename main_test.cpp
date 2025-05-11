@@ -10,23 +10,23 @@
   #include <utility> /* <include> */
   int add(int a, int b){ /* <function> */
     /* params: a, b */
-    tyan::Painter& tyan_painter = tyan::Painter::get();
+    TyanMethod();
     TyanCatch(a);
     TyanCatch(b);
     LogLine("int add(int a, int b){");
-    tyan::PainterDomainGuard tyan_domain_guard_1(&tyan_painter);
+    TyanGuard(1);
     LogLine("return a + b;");
     return a + b; /* <return> */
   }
   int fibonacci(int n){ /* <function> */
     /* params: n */
-    tyan::Painter& tyan_painter = tyan::Painter::get();
+    TyanMethod();
     TyanCatch(n);
     LogLine("int fibonacci(int n){");
-    tyan::PainterDomainGuard tyan_domain_guard_3(&tyan_painter);
+    TyanGuard(3);
     if (n <= 1){ /* <if> */
       LogLine("if (n <= 1){");
-      tyan::PainterDomainGuard tyan_domain_guard_4(&tyan_painter);
+      TyanGuard(4);
       LogLine("return n;");
       return n; /* <return> */
     }
@@ -35,17 +35,24 @@
   }
   int main(){ /* <function> */
     /* params:  */
-    tyan::Painter& tyan_painter = tyan::Painter::get();
+    TyanMethod();
     LogLine("int main(){");
-    tyan::PainterDomainGuard tyan_domain_guard_7(&tyan_painter);
-    LogLine("assert(add(10, 20) == 30);");
+    TyanGuard(7);
     assert(add(10, 20) == 30); /* <assert> */
-    LogLine("int n = 3;");
-    int n = 3; /* <var_set> */
-    LogLine("int result = fibonacci(n);");
+    LogLine("assert(add(10, 20) == 30);");
+    int n = 1; /* <var_set> */
+    LogLine("int n = 1;");
+    TyanCatch(n);
+    n++; /* <single-sentence> */
+    LogLine("n++;");
+    n += 1; /* <var_add_self> */
+    LogLine("n += 1;");
+    TyanCatch(n);
     int result = fibonacci(n); /* <var_set> */
-    LogLine("std::cout << \"The 10th Fibonacci number is: \" << result << std::endl;");
+    LogLine("int result = fibonacci(n);");
+    TyanCatch(result);
     std::cout << "The 10th Fibonacci number is: " << result << std::endl; /* <single-sentence> */
+    LogLine("std::cout << \"The 10th Fibonacci number is: \" << result << std::endl;");
     LogLine("return 0;");
     return 0; /* <return> */
   }

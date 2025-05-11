@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <stdint-gcc.h>
@@ -10,10 +11,11 @@ namespace tyan {
         return std::to_string(num);
     }
 
-    class Painter {
+    class ThreadContext {
         uint32_t depth_ = 0;
     public:
-        std::map<std::string, std::string> var_map;
+
+        uint32_t depth() { return depth_; }
 
         void push() {
             depth_ += 1;
@@ -24,10 +26,15 @@ namespace tyan {
         }
 
 
-        static Painter &get() {
-            thread_local Painter painter;
-            return painter;
+        static ThreadContext &get() {
+            thread_local ThreadContext txn;
+            return txn;
         }
+    };
+
+    class Painter {
+    public:
+        std::map<std::string, std::string> var_map;
 
         template<typename T>
         T &catch_var(const std::string &name, T &new_val) {
@@ -53,10 +60,17 @@ namespace tyan {
         }
 
         void log_line(const std::string &line) {
+            static std::set VAR_CHARSET = {
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
+            };
             std::string tmp;
-            std::cout << std::string(depth_ << 1, ' ');
+            std::cout << std::string(ThreadContext::get().depth() << 1, ' ');
             for (const char c: line) {
-                if (c == ' ' || c == ')' || c == '(' || c == ',' || c == ';') {
+                if (VAR_CHARSET.find(c) == VAR_CHARSET.end()) {
                     this->log_var(tmp);
                     tmp.clear();
                     std::cout << c;
@@ -76,19 +90,19 @@ namespace tyan {
     };
 
     class PainterDomainGuard {
-        Painter* painter_;
     public:
-        explicit PainterDomainGuard(Painter* painter): painter_((painter)) {
-            painter->push();
+        explicit PainterDomainGuard(){
+            ThreadContext::get().push();
         }
 
         ~PainterDomainGuard() {
-            painter_->pop();
+            ThreadContext::get().pop();
         }
     };
 
 }
 
-
-#define TyanCatch(var) tyan_painter.catch_var(#var, var)
-#define LogLine(line) tyan_painter.log_line(line)
+#define TyanMethod()    tyan::Painter tyan_painter
+#define TyanGuard(id)   tyan::PainterDomainGuard tyan_domain_guard_ ## id;
+#define TyanCatch(var)  tyan_painter.catch_var(#var, var)
+#define LogLine(line)   tyan_painter.log_line(line)
