@@ -427,20 +427,45 @@ class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
         self.need_domain_guard = True
+        self.params_name = []
+
+    def parse_head(self):
+        self.params_name = []
+        content = "".join(self.head_content)
+        if content[:10].replace(" ", "").startswith("for(auto"):
+            pos = content.find("auto")
+            pos_end = content.find(":", pos)
+            if pos_end == -1:
+                return
+            candidate_str = content[pos+4:pos_end + 1]
+            typing_param = ""
+            for char in candidate_str:
+                if char in PARAM_CHAR_SET:
+                    typing_param += char
+                    continue
+                if len(typing_param) > 0:
+                    self.params_name.append(typing_param)
+                    typing_param = ""
 
     def print_head(self, add_tyan_code=False) -> str:
         result = super().print_head(add_tyan_code)
         if add_tyan_code:
-            if len(self.body_content) > 0:
+            line_prefix = line_prefix_depth(self.depth)
+            log_line = "".join(self.head_content)
+            log_line = log_line.replace('"', '\\"')
+            result = f"{line_prefix}LogLine(\"{log_line}\");" + result
 
-                line_prefix = line_prefix_depth(self.depth)
-                log_line = "".join(self.head_content)
-                log_line = log_line.replace('"', '\\"')
-                result = f"{line_prefix}LogLine(\"{log_line}\");" + result
+            if len(self.body_content) == 0:
+                return result
 
-                line_prefix = line_prefix_depth(self.depth + 1)
-                guard_uuid = get_painter_guard_uuid()
-                result += f"{line_prefix}TyanGuard({guard_uuid});"
+            for param in self.params_name:
+                result += line_prefix_depth(self.depth + 1) + f"TyanCatch({param});"
+
+            line_prefix = line_prefix_depth(self.depth + 1)
+            guard_uuid = get_painter_guard_uuid()
+            result += f"{line_prefix}TyanGuard({guard_uuid});"
+
+
 
         return result
 

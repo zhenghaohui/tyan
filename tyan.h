@@ -48,6 +48,7 @@ namespace tyan {
         template<typename T>
         void catch_var(const std::string &name, T *new_val) {
             this->var_map[name] = ::tyan::to_string(new_val);
+            // std::cout << "catch " << name << " -> " << this->var_map[name] << std::endl;
         }
 
         template<typename T>
@@ -59,11 +60,11 @@ namespace tyan {
             log(value_str);
         }
 
-        void log_var(const std::string &name) {
-            if (this->var_map.count(name)) {
-                log(name + ":" + this->var_map[name]);
+        std::string get_var(const std::string &name) {
+            if (this->var_map.contains(name)) {
+                return name + ":" + this->var_map[name];
             } else {
-                log(name);
+                return name;
             }
         }
 
@@ -79,9 +80,9 @@ namespace tyan {
             std::ostringstream oss;
             oss << std::string(ThreadContext::get().depth() << 1, ' ');
             for (const char c: line) {
-                if (VAR_CHARSET.find(c) == VAR_CHARSET.end()) {
+                if (!VAR_CHARSET.contains(c)) {
                     if (!tmp.empty()) {
-                        oss << tmp;
+                        oss << get_var(tmp);
                         tmp.clear();
                     }
                     oss << c;
@@ -90,7 +91,7 @@ namespace tyan {
                 tmp += c;
             }
             if (!tmp.empty()) {
-                oss << tmp;
+                oss << get_var(tmp);
             }
             log(oss.str());
         }
