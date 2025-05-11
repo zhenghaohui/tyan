@@ -428,6 +428,22 @@ class CodeItemFor(CodeItem):
         super().__init__(CodeItemType.FOR, head_content, body_content)
         self.need_domain_guard = True
 
+    def print_head(self, add_tyan_code=False) -> str:
+        result = super().print_head(add_tyan_code)
+        if add_tyan_code:
+            if len(self.body_content) > 0:
+
+                line_prefix = line_prefix_depth(self.depth)
+                log_line = "".join(self.head_content)
+                log_line = log_line.replace('"', '\\"')
+                result = f"{line_prefix}LogLine(\"{log_line}\");" + result
+
+                line_prefix = line_prefix_depth(self.depth + 1)
+                guard_uuid = get_painter_guard_uuid()
+                result += f"{line_prefix}TyanGuard({guard_uuid});"
+
+        return result
+
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
