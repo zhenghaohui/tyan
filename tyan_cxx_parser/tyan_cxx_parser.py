@@ -429,6 +429,12 @@ class CodeItemFor(CodeItem):
         self.need_domain_guard = True
         self.params_name = []
 
+    def parse_body(self):
+        # todo: better impl
+        self.depth += 1
+        super().parse_body()
+        self.depth -= 1
+
     def parse_head(self):
         self.params_name = []
         content = "".join(self.head_content)
@@ -465,12 +471,30 @@ class CodeItemFor(CodeItem):
             guard_uuid = get_painter_guard_uuid()
             result += f"{line_prefix}TyanGuard({guard_uuid});"
 
+            for param in self.params_name:
+                result += line_prefix_depth(self.depth + 1) + f"LogLine(\"[loop-round] {param} -> \");"
+
 
 
         return result
 
     def print(self, add_tyan_code=False) -> str:
-        result = super().print(add_tyan_code)
+        result = self.print_head(add_tyan_code)
+
+        line_prefix = line_prefix_depth(self.depth + 1)
+
+        if add_tyan_code and len(self.parts) > 0:
+            result += f"{line_prefix}{{"
+            guard_uuid = get_painter_guard_uuid()
+            result += f"{line_prefix}TyanGuard({guard_uuid});"
+
+
+        for part in self.parts:
+            result += part.print(add_tyan_code)
+
+        if add_tyan_code and len(self.parts) > 0:
+            result += f"{line_prefix}}}"
+
         if any("{" in line for line in self.head_content):
             result += line_prefix_depth(self.depth) + "}"
 
