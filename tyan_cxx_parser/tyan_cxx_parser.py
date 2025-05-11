@@ -343,7 +343,7 @@ class CodeItemFunction(CodeItem):
         self.need_domain_guard = True
 
     def print_head(self, add_tyan_code=False):
-        result = super().print_head()
+        result = super().print_head(add_tyan_code)
         line_prefix = line_prefix_depth(self.depth + 1)
         if add_tyan_code:
             result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
@@ -574,15 +574,15 @@ class CodeItemReturn(CodeItemSingleSentence):
         self.item_type = CodeItemType.RETURN
 
 def remove_comment(content: str) -> str:
-    # Remove block comments
-    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     # Remove line comments
     content = re.sub(r'//.*', '', content)
+    # Remove block comments
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
     return content
 
 
 def standard_code(content: str) -> str:
-    # content = remove_comment(content)
+    content = remove_comment(content)
     # Remove all whitespace characters (spaces, tabs, newlines)
     content = ''.join(content.split())
     # Insert a newline character every 100 characters
@@ -600,6 +600,7 @@ def main():
 
     # Read source code
     src_code = read_file(args.src_path)
+    src_code = remove_comment(src_code)
 
     # Standardize and process the code
     standardized_code = standard_code(src_code)
@@ -613,7 +614,7 @@ def main():
     code_tree.parse()
 
     write_file(args.dst_path, code_tree.print(True))
-    write_file(args.dst_path + ".std", standard_code(code_tree.print()))
+    write_file(args.dst_path + ".std", standard_code(src_code))
 
     # Verify that the standardized source and output match
     assert read_file(args.src_path + ".std") == read_file(args.dst_path + ".std"), "Standardized files do not match!"
