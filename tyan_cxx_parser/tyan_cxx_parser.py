@@ -239,6 +239,8 @@ class CodeItem:
         guard_uuid = get_painter_guard_uuid()
         result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
         log_line = "".join(self.head_content)
+        log_line = log_line.replace('"', '\\"')
+
         result += f"{line_prefix}LogLine(\"{log_line}\");"
         return result
 

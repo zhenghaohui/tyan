@@ -48,7 +48,7 @@
     LogLine("int result = fibonacci(5);");
     int result = fibonacci(5); /* <var_set> */
     tyan::PainterDomainGuard tyan_domain_guard_10(&tyan_painter);
-    LogLine("std::cout << "The 10th Fibonacci number is: " << result << std::endl;");
+    LogLine("std::cout << \"The 10th Fibonacci number is: \" << result << std::endl;");
     std::cout << "The 10th Fibonacci number is: " << result << std::endl; /* <single-sentence> */
     tyan::PainterDomainGuard tyan_domain_guard_11(&tyan_painter);
     LogLine("return 0;");
