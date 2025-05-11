@@ -370,34 +370,49 @@ def main():
     parser.add_argument('src_path', help='cxx源码输入文件路径')
     parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径')
     args = parser.parse_args()
+
     print(f"Parsing {args.src_path} > {args.dst_path} ...")
 
-    with open(args.src_path, "r", encoding="utf-8") as src_file:
-        src_code = src_file.read()
+    # Read source code
+    src_code = read_file(args.src_path)
 
-    with open(args.src_path + ".std", "w", encoding="utf-8") as dst_file:
-        dst_file.write(standard_code(src_code))
+    # Standardize and process the code
+    standardized_code = standard_code(src_code)
+    write_file(args.src_path + ".std", standardized_code)
 
-    src_code: str = src_code.replace("{", "\n{\n")
-    src_code: str = src_code.replace("}", "\n}\n")
-    src_code: str = src_code.replace("if(", "if (")
-    src_code: str = src_code.replace("for(", "for (")
-    src_code: str = src_code.replace(" else", "\nelse")
-    src_code: str = src_code.replace(";else", ";\nelse")
-    raw_content: List[str] = [line.strip() for line in src_code.split("\n") if len(line.strip()) > 0]
+    formatted_code = format_code(src_code)
+    raw_content = [line.strip() for line in formatted_code.split("\n") if line.strip()]
 
-    code_tree: CodeItem = CodeItemSourceCode(raw_content)
+    # Parse and generate output
+    code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    with open(args.dst_path, "w", encoding="utf-8") as dst_file:
-        dst_file.write(code_tree.print())
+    write_file(args.dst_path, code_tree.print())
+    write_file(args.dst_path + ".tyan", code_tree.print_struct())
+    write_file(args.dst_path + ".std", standard_code(code_tree.print()))
 
-    with open(args.dst_path + ".tyan", "w", encoding="utf-8") as dst_file:
-        dst_file.write(code_tree.print_struct())
 
-    with open(args.dst_path + ".std", "w", encoding="utf-8") as dst_file:
-        dst_file.write(standard_code(code_tree.print()))
+def read_file(file_path: str) -> str:
+    """Reads and returns the content of a file."""
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
 
+
+def write_file(file_path: str, content: str):
+    """Writes content to a file."""
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+
+
+def format_code(code: str) -> str:
+    """Formats the C++ code for better readability."""
+    code = code.replace("{", "\n{\n")
+    code = code.replace("}", "\n}\n")
+    code = code.replace("if(", "if (")
+    code = code.replace("for(", "for (")
+    code = code.replace(" else", "\nelse")
+    code = code.replace(";else", ";\nelse")
+    return code
 
 if __name__ == '__main__':
     main()
