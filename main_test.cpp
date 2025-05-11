@@ -33,11 +33,40 @@
     LogLine("return fibonacci(n - 1) + fibonacci(n - 2);");
     return fibonacci(n - 1) + fibonacci(n - 2); /* <return> */
   }
+  struct Point{ /* <struct> */
+    int x, y; /* <single-sentence> */
+    LogLine("int x, y;");
+    // 构造函数 /* <comment> */
+    Point(int x = 0, int y = 0) : x(x), y(y){ /* <function> */
+      /* params: 0, x, y */
+      TyanMethod();
+      TyanCatch(0);
+      TyanCatch(x);
+      TyanCatch(y);
+      LogLine("Point(int x = 0, int y = 0) : x(x), y(y){");
+      TyanGuard(8);
+    }
+    // 重载输出运算符 /* <comment> */
+    friend std::ostream &operator<<(std::ostream &os, const Point &p){ /* <function> */
+      /* params: os, p */
+      TyanMethod();
+      TyanCatch(os);
+      TyanCatch(p);
+      LogLine("friend std::ostream &operator<<(std::ostream &os, const Point &p){");
+      TyanGuard(9);
+      os << "(" << p.x << ", " << p.y << ")"; /* <single-sentence> */
+      LogLine("os << \"(\" << p.x << \", \" << p.y << \")\";");
+      LogLine("return os;");
+      return os; /* <return> */
+    }
+  }
+  ; /* <single-sentence> */
+  LogLine(";");
   int main(){ /* <function> */
     /* params:  */
     TyanMethod();
     LogLine("int main(){");
-    TyanGuard(7);
+    TyanGuard(13);
     assert(add(10, 20) == 30); /* <assert> */
     LogLine("assert(add(10, 20) == 30);");
     int n = 1; /* <var_set> */

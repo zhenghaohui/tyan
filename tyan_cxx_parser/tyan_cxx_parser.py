@@ -20,6 +20,8 @@ class CodeItemType(Enum):
     SINGLE_SENTENCE = "<single-sentence>"
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
+    STRUCT = "<struct>"
+    CLASS = "<lass>"
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
@@ -155,6 +157,20 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
                                                    self.body_content[head_end_line:to_line]))
+                continue
+
+            # schema: struct
+            if line.startswith("struct "):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemStruct(self.body_content[from_line:head_end_line],
+                                                self.body_content[head_end_line:to_line]))
+                continue
+
+            # schema: class
+            if line.startswith("class "):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemClass(self.body_content[from_line:head_end_line],
+                                                self.body_content[head_end_line:to_line]))
                 continue
 
             if line.startswith("if (") :
@@ -391,6 +407,24 @@ class CodeItemSingleSentence(CodeItem):
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        result += "\n" + "  " * self.depth + "}"
+        return result
+
+class CodeItemStruct(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.STRUCT, head_content, body_content)
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        result += "\n" + "  " * self.depth + "}"
+        return result
+
+class CodeItemClass(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.CLASS, head_content, body_content)
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
