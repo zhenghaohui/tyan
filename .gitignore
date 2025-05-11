@@ -14,3 +14,4 @@ bin/
 obj/
 *.log
 tyan_cxx_parser/local_test
+cmake-build-debug
