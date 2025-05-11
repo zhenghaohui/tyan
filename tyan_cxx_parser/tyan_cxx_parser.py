@@ -261,6 +261,14 @@ class CodeItemCommentLine(CodeItem):
 def line_prefix_depth(depth: int) -> str:
     return "\n" + "  " * depth
 
+class PainterGuard:
+    painter_guard_uuid = 0
+
+
+def get_painter_guard_uuid() -> int:
+    PainterGuard.painter_guard_uuid += 1
+    return PainterGuard.painter_guard_uuid
+
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
@@ -272,9 +280,14 @@ class CodeItemFunction(CodeItem):
         line_prefix = line_prefix_depth(self.depth + 1)
         result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
         if add_tyan_code:
-            result += f"{line_prefix}tyan::Painter painter;"
+            result += f"{line_prefix}tyan::Painter& tyan_painter = tyan::Painter::get();"
+            guard_uuid = get_painter_guard_uuid()
+            result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
             for param in self.params:
                 result += f"{line_prefix}TyanCatch({param});"
+
+            log_line = "".join(self.head_content)
+            result += f"{line_prefix}LogLine(\"{log_line}\");"
         return result
 
     def print(self, add_tyan_code=False) -> str:
@@ -296,7 +309,8 @@ class CodeItemFunction(CodeItem):
                     break
                 name += chr
             name = name[::-1]
-            result.append(name)
+            if len(name) > 0:
+                result.append(name)
         return result
 
     def parse_head(self):
