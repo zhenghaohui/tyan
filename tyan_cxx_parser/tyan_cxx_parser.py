@@ -73,6 +73,8 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
         if line.find(';') != -1:
             break
         special_macro = line.replace(" ", "")
+        if special_macro.startswith("#"):
+            break
         if special_macro in ["public:", "private:", "procted:"]:
             break
         if special_macro.startswith("template<"):
@@ -160,12 +162,17 @@ class CodeItem:
             # schema4: function
             if not self.is_under_function and line.find("(") != -1 and line.find(";") == -1:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
-                self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
-                                                  self.body_content[head_end_line:to_line]))
+                head_content = self.body_content[from_line:head_end_line]
+                if head_content[-1][-1] == ';':
+                    to_line = head_end_line
+                    self.append_part(CodeItemSingleSentence(head_content))
+                else:
+                    self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
+                                                      self.body_content[head_end_line:to_line]))
                 continue
 
             # schema5: namespace
-            if line.startswith("namespace "):
+            if line.startswith("namespace"):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
                                                    self.body_content[head_end_line:to_line]))
