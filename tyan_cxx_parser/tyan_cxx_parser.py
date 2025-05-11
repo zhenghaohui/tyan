@@ -99,8 +99,6 @@ class CodeItem:
             to_line = from_line + 1
 
             line = self.body_content[from_line]
-            if line.find("assert") != -1:
-                print("hhhh")
 
             # schema1: include
             if line.startswith("#include"):
@@ -122,7 +120,6 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
                                                   self.body_content[head_end_line:to_line]))
-                print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
             # schema5: namespace
@@ -130,7 +127,6 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
                                                    self.body_content[head_end_line:to_line]))
-                print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
             # schema: assert
@@ -138,7 +134,6 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content,
                                                                              '(', ')')
                 self.append_part(CodeItemAssert(self.body_content[from_line:to_line], []))
-                print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
             if line.startswith("if (") :
@@ -146,7 +141,6 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
                                             self.body_content[head_end_line:to_line]))
-                print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
             # schema6: declare class
@@ -209,13 +203,7 @@ class CodeItem:
     def parse(self):
         self.parse_body()
 
-    def print_struct(self) -> str:
-        result = f"{self.item_type.value}\n"
-        for part in self.parts:
-            result += part.print_struct()
-        return result
-
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = "\n"
         result += "  " * depth
         result += f"/* {self.item_type.value} */"
@@ -224,7 +212,7 @@ class CodeItem:
             result += "  " * depth
             result += line
         for part in self.parts:
-            result += part.print(depth + 2)
+            result += part.print(depth + 2, add_tyan_code)
         return result
 
 
@@ -247,7 +235,7 @@ class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
         result += "\n"
         result += "  " * depth
@@ -259,7 +247,7 @@ class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
         if any("{" in line for line in self.head_content):
             result += "\n"
@@ -272,7 +260,7 @@ class CodeItemElse(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.ELSE, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
         if any("{" in line for line in self.head_content):
             result += "\n"
@@ -285,7 +273,7 @@ class CodeItemFor(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FOR, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
         if any("{" in line for line in self.head_content):
             result += "\n"
@@ -303,11 +291,9 @@ class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
-        result += "\n"
-        result += "  " * depth
-        result += "}"
+        result += "\n" + "  " * depth + "}"
         return result
 
 class CodeItemAssert(CodeItem):
@@ -318,6 +304,14 @@ class CodeItemAssert(CodeItem):
 class CodeItemSourceCode(CodeItem):
     def __init__(self, body_content: List[str]):
         super().__init__(CodeItemType.CXX_SOURCE, [], body_content)
+
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
+        result = ""
+        if add_tyan_code:
+            result += "\n" + "  " * depth
+            result += '#include "tyan.h"'
+        result += super().print(depth, add_tyan_code)
+        return result
 
 
 class CodeItemDeclareClass(CodeItem):
@@ -344,7 +338,7 @@ class CodeItemPureDomain(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.PURE_DOMAIN, head_content, body_content)
 
-    def print(self, depth: int = -2) -> str:
+    def print(self, depth: int = -2, add_tyan_code=False) -> str:
         result = super().print(depth)
         result += "\n"
         result += "  " * depth
@@ -387,8 +381,7 @@ def main():
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    write_file(args.dst_path, code_tree.print())
-    write_file(args.dst_path + ".tyan", code_tree.print_struct())
+    write_file(args.dst_path, code_tree.print(-2, True))
     write_file(args.dst_path + ".std", standard_code(code_tree.print()))
 
     # Verify that the standardized source and output match
