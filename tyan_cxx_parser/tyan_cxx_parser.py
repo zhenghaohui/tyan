@@ -27,7 +27,7 @@ class CodeItemType(Enum):
     NAMESPACE = "<namespace>"
     VAR_SET = "<var_set>"
     STRUCT = "<struct>"
-    CLASS = "<lass>"
+    CLASS = "<class>"
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
@@ -447,7 +447,8 @@ class CodeItemClass(CodeItem):
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
-        result += "\n" + "  " * self.depth + "}"
+        if any("{" in line for line in self.head_content):
+            result += line_prefix_depth(self.depth) + "}"
         return result
 
 class CodeItemSourceCode(CodeItem):
