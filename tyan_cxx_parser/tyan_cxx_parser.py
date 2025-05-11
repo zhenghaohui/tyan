@@ -77,11 +77,20 @@ def found_op(line: str, op: str) -> bool:
         return True
     return False
 
+def short_head_content(content: List[str]) -> List[str] :
+    updated_content = []
+    for idx, line in enumerate(content):
+        if len(updated_content) == 0 or updated_content[-1].count("// ") or updated_content[-1].count("/*"):
+            updated_content.append(line)
+            continue
+        updated_content[-1] += line
+    return updated_content
+
 
 class CodeItem:
     def __init__(self, item_type: CodeItemType, head_content: List[str], body_content: List[str]):
         self.item_type: CodeItemType = item_type
-        self.head_content: List[str] = head_content
+        self.head_content: List[str] = short_head_content(head_content)
         self.body_content: List[str] = body_content
         self.parts: List[CodeItem] = []
         self.parent: "CodeItem" = None
@@ -204,8 +213,8 @@ class CodeItem:
         self.parse_body()
 
     def print(self, depth: int = -2, add_tyan_code=False) -> str:
-        result = "\n"
-        result += "  " * depth
+        result = ""
+        result += "\n" + "  " * depth
         result += f"/* {self.item_type.value} */"
         for line in self.head_content:
             result += "\n"
@@ -285,7 +294,6 @@ class CodeItemFor(CodeItem):
 class CodeItemSingleSentence(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.SINGLE_SENTENCE, head_content, [])
-
 
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
