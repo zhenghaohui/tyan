@@ -56,7 +56,7 @@ namespace tyan {
             std::string tmp;
             std::cout << std::string(depth_ << 1, ' ');
             for (const char c: line) {
-                if (c == ' ' || c == ')' || c == '(' || c == ',') {
+                if (c == ' ' || c == ')' || c == '(' || c == ',' || c == ';') {
                     this->log_var(tmp);
                     tmp.clear();
                     std::cout << c;

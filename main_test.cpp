@@ -40,8 +40,10 @@
     tyan::PainterDomainGuard tyan_domain_guard_7(&tyan_painter);
     LogLine("assert(add(10, 20) == 30);");
     assert(add(10, 20) == 30); /* <assert> */
-    LogLine("int result = fibonacci(5);");
-    int result = fibonacci(5); /* <var_set> */
+    LogLine("int n = 3;");
+    int n = 3; /* <var_set> */
+    LogLine("int result = fibonacci(n);");
+    int result = fibonacci(n); /* <var_set> */
     LogLine("std::cout << \"The 10th Fibonacci number is: \" << result << std::endl;");
     std::cout << "The 10th Fibonacci number is: " << result << std::endl; /* <single-sentence> */
     LogLine("return 0;");
