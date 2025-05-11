@@ -299,7 +299,8 @@ class CodeItem:
         line_prefix = line_prefix_depth(self.depth)
         for line in self.head_content:
             result += f"{line_prefix}{line}"
-        result += f" /* {self.item_type.value} */"
+        if add_tyan_code:
+            result += f" /* {self.item_type.value} */"
         return result
 
     def print(self, add_tyan_code=False) -> str:
@@ -344,8 +345,8 @@ class CodeItemFunction(CodeItem):
     def print_head(self, add_tyan_code=False):
         result = super().print_head()
         line_prefix = line_prefix_depth(self.depth + 1)
-        result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
         if add_tyan_code:
+            result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
             result += f"{line_prefix}TyanMethod();"
             for param in self.params:
                 result += f"{line_prefix}TyanCatch({param});"
@@ -581,7 +582,7 @@ def remove_comment(content: str) -> str:
 
 
 def standard_code(content: str) -> str:
-    content = remove_comment(content)
+    # content = remove_comment(content)
     # Remove all whitespace characters (spaces, tabs, newlines)
     content = ''.join(content.split())
     # Insert a newline character every 100 characters
