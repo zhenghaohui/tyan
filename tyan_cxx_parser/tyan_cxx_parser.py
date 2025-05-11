@@ -229,6 +229,15 @@ class CodeItem:
         self.parse_head()
         self.parse_body()
 
+    def log_line(self, depth: int) -> str:
+        result = ""
+        line_prefix = line_prefix_depth(depth)
+        guard_uuid = get_painter_guard_uuid()
+        result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
+        log_line = "".join(self.head_content)
+        result += f"{line_prefix}LogLine(\"{log_line}\");"
+        return result
+
     def print_head(self, add_tyan_code=False) -> str:
         result = ""
         line_prefix = line_prefix_depth(self.depth)
@@ -281,13 +290,9 @@ class CodeItemFunction(CodeItem):
         result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
         if add_tyan_code:
             result += f"{line_prefix}tyan::Painter& tyan_painter = tyan::Painter::get();"
-            guard_uuid = get_painter_guard_uuid()
-            result += f"{line_prefix}tyan::PainterDomainGuard tyan_domain_guard_{guard_uuid}(&tyan_painter);"
             for param in self.params:
                 result += f"{line_prefix}TyanCatch({param});"
-
-            log_line = "".join(self.head_content)
-            result += f"{line_prefix}LogLine(\"{log_line}\");"
+            result += self.log_line(self.depth + 1)
         return result
 
     def print(self, add_tyan_code=False) -> str:
@@ -320,12 +325,17 @@ class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
 
+    def print_head(self, add_tyan_code=False) -> str:
+        result = super().print_head(add_tyan_code)
+        if add_tyan_code:
+            result += self.log_line(self.depth + 1)
+        return result
+
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
-            result += "\n"
-            result += "  " * self.depth
-            result += "}"
+            result += line_prefix_depth(self.depth) + "}"
+
         return result
 
 
@@ -336,9 +346,8 @@ class CodeItemElse(CodeItem):
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
-            result += "\n"
-            result += "  " * self.depth
-            result += "}"
+            result += line_prefix_depth(self.depth) + "}"
+
         return result
 
 
@@ -349,9 +358,8 @@ class CodeItemFor(CodeItem):
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
         if any("{" in line for line in self.head_content):
-            result += "\n"
-            result += "  " * self.depth
-            result += "}"
+            result += line_prefix_depth(self.depth) + "}"
+
         return result
 
 
