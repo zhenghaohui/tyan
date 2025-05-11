@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <ctime>
+#include <thread>
 
 namespace tyan {
     template<typename T>
@@ -104,7 +105,7 @@ namespace tyan {
             auto local_time = *std::localtime(&now);
             std::ostringstream oss;
             oss << std::put_time(&local_time, "%H:%M:%S");
-            std::cout << "[" << oss.str() << "] " << message << std::endl;
+            std::cout << "[" << oss.str() << "][" << std::this_thread::get_id() << "] " << message << std::endl;
         }
     };
 
