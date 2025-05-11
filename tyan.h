@@ -4,23 +4,25 @@
 #include <set>
 #include <sstream>
 #include <string>
-#include <stdint-gcc.h>
+#include <cstdint>
+#include <iomanip>
+#include <ctime>
 
 namespace tyan {
     template<typename T>
-    std::string to_string(T* num) {
+    std::string to_string(T *num) {
         return "<ptr>";
     }
 
     template<>
-    inline std::string to_string<int>(int* num) {
+    inline std::string to_string<int>(int *num) {
         return std::to_string(*num);
     }
 
     class ThreadContext {
         uint32_t depth_ = 0;
-    public:
 
+    public:
         uint32_t depth() { return depth_; }
 
         void push() {
@@ -49,23 +51,23 @@ namespace tyan {
 
         template<typename T>
         void log_value(T &new_val) {
-            std::cout << ::tyan::to_string(new_val);
+            log(std::string("[") + current_time() + "] " + ::tyan::to_string(new_val));
         }
 
         void log_value(const std::string &value_str) {
-            std::cout << value_str;
+            log(std::string("[") + current_time() + "] " + value_str);
         }
 
         void log_var(const std::string &name) {
             if (this->var_map.count(name)) {
-                std::cout << name << ":" << this->var_map[name];
+                log(std::string("[") + current_time() + "] " + name + ":" + this->var_map[name]);
             } else {
-                std::cout << name;
+                log(std::string("[") + current_time() + "] " + name);
             }
         }
 
         void log_line(const std::string &line) {
-            static std::set VAR_CHARSET = {
+            static std::set<char> VAR_CHARSET = {
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
                 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -73,30 +75,46 @@ namespace tyan {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
             };
             std::string tmp;
-            std::cout << std::string(ThreadContext::get().depth() << 1, ' ');
+            std::ostringstream oss;
+            oss << std::string(ThreadContext::get().depth() << 1, ' ');
             for (const char c: line) {
                 if (VAR_CHARSET.find(c) == VAR_CHARSET.end()) {
-                    this->log_var(tmp);
-                    tmp.clear();
-                    std::cout << c;
+                    if (!tmp.empty()) {
+                        oss << tmp;
+                        tmp.clear();
+                    }
+                    oss << c;
                     continue;
                 }
                 tmp += c;
             }
             if (!tmp.empty()) {
-                this->log_var(tmp);
+                oss << tmp;
             }
-            std::cout << std::endl;
+            log(std::string("[") + current_time() + "] " + oss.str());
         }
 
         ~Painter() {
             // std::cout << os.str() << std::endl;
         }
+
+    private:
+        void log(const std::string &message) {
+            std::cout << message << std::endl;
+        }
+
+        std::string current_time() {
+            auto now = std::time(nullptr);
+            auto local_time = *std::localtime(&now);
+            std::ostringstream oss;
+            oss << std::put_time(&local_time, "%H:%M:%S");
+            return oss.str();
+        }
     };
 
     class PainterDomainGuard {
     public:
-        explicit PainterDomainGuard(){
+        explicit PainterDomainGuard() {
             ThreadContext::get().push();
         }
 
@@ -104,7 +122,6 @@ namespace tyan {
             ThreadContext::get().pop();
         }
     };
-
 }
 
 #define TyanMethod()    tyan::Painter tyan_painter
