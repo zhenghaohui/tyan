@@ -22,6 +22,7 @@ class CodeItemType(Enum):
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
+    RETURN  = "<return>"
     PURE_DOMAIN = "<pure_domain>"
     ELSE = "<else>"
     UNKNOWN = "<unknown>"
@@ -154,13 +155,6 @@ class CodeItem:
                                                    self.body_content[head_end_line:to_line]))
                 continue
 
-            # schema: assert
-            if line.startswith("assert("):
-                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content,
-                                                                             '(', ')')
-                self.append_part(CodeItemAssert(self.body_content[from_line:to_line], []))
-                continue
-
             if line.startswith("if (") :
                 # todo: simple if without bracket
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
@@ -202,6 +196,16 @@ class CodeItem:
             # schema: single line
             from_line, to_line = go_through_single_sentence(from_line, self.body_content)
             line = "".join(self.body_content[from_line:to_line])
+
+            # schema: assert
+            if line.startswith("assert("):
+                self.append_part(CodeItemAssert(self.body_content[from_line:to_line]))
+                continue
+
+            # schema: assert
+            if line.startswith("return"):
+                self.append_part(CodeItemReturn(self.body_content[from_line:to_line]))
+                continue
 
             # schema: =
             if found_op(line, "="):
@@ -367,6 +371,12 @@ class CodeItemSingleSentence(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.SINGLE_SENTENCE, head_content, [])
 
+    def print_head(self, add_tyan_code=False) -> str:
+        result = super().print_head(add_tyan_code)
+        if add_tyan_code:
+            result = self.log_line(self.depth) + result
+        return result
+
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
@@ -375,11 +385,6 @@ class CodeItemNamespace(CodeItem):
         result = super().print(add_tyan_code)
         result += "\n" + "  " * self.depth + "}"
         return result
-
-class CodeItemAssert(CodeItem):
-    def __init__(self, head_content: List[str], body_content: List[str]):
-        super().__init__(CodeItemType.ASSERT, head_content, body_content)
-
 
 class CodeItemSourceCode(CodeItem):
     def __init__(self, body_content: List[str]):
@@ -398,22 +403,6 @@ class CodeItemDeclareClass(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.DECLARE_CLASS, head_content, [])
 
-
-class CodeItemVarSet(CodeItem):
-    def __init__(self, head_content: List[str]):
-        super().__init__(CodeItemType.VAR_SET, head_content, [])
-
-
-class CodeItemVarAddSelf(CodeItem):
-    def __init__(self, head_content: List[str]):
-        super().__init__(CodeItemType.VAR_ADD_SELF, head_content, [])
-
-
-class CodeItemVarSubSelf(CodeItem):
-    def __init__(self, head_content: List[str]):
-        super().__init__(CodeItemType.VAR_SUB_SELF, head_content, [])
-
-
 class CodeItemPureDomain(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.PURE_DOMAIN, head_content, body_content)
@@ -424,6 +413,33 @@ class CodeItemPureDomain(CodeItem):
         result += "  " * self.depth
         result += "}"
         return result
+
+class CodeItemAssert(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.ASSERT
+
+
+class CodeItemVarSet(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.VAR_SET
+
+
+class CodeItemVarAddSelf(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.VAR_ADD_SELF
+
+class CodeItemVarSubSelf(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.VAR_SUB_SELF
+
+class CodeItemReturn(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.RETURN
 
 def remove_comment(content: str) -> str:
     # Remove block comments
