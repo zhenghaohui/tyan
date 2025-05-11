@@ -22,6 +22,7 @@ class CodeItemType(Enum):
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
     PURE_DOMAIN = "<pure_domain>"
+    ELSE = "<else>"
     UNKNOWN = "<unknown>"
 
 
@@ -133,7 +134,7 @@ class CodeItem:
                 print(f"{from_line}, {head_end_line}, {to_line}")
                 continue
 
-            if line.startswith("if ("):
+            if line.startswith("if (") :
                 # todo: simple if without bracket
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
@@ -163,6 +164,13 @@ class CodeItem:
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemPureDomain(self.body_content[from_line:head_end_line],
                                                     self.body_content[head_end_line:to_line]))
+                continue
+
+            # schema: else
+            if line.startswith("else"):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemElse(self.body_content[from_line:head_end_line],
+                                              self.body_content[head_end_line:to_line]))
                 continue
 
             # schema: single line
@@ -243,6 +251,18 @@ class CodeItemFunction(CodeItem):
 class CodeItemIf(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.IF, head_content, body_content)
+
+    def print(self, depth: int = -2) -> str:
+        result = super().print(depth)
+        result += "\n"
+        result += "  " * depth
+        result += "}"
+        return result
+
+
+class CodeItemElse(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.ELSE, head_content, body_content)
 
     def print(self, depth: int = -2) -> str:
         result = super().print(depth)
