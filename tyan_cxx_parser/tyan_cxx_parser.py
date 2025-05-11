@@ -438,7 +438,8 @@ class CodeItemFor(CodeItem):
     def parse_head(self):
         self.params_name = []
         content = "".join(self.head_content)
-        if content[:10].replace(" ", "").startswith("for(auto"):
+        candidate_prefix = content[:20].replace(" ", "")
+        if candidate_prefix.startswith("for(auto") or candidate_prefix.startswith("for(constauto"):
             pos = content.find("auto")
             pos_end = content.find(":", pos)
             if pos_end == -1:
@@ -471,8 +472,8 @@ class CodeItemFor(CodeItem):
             guard_uuid = get_painter_guard_uuid()
             result += f"{line_prefix}TyanGuard({guard_uuid});"
 
-            for param in self.params_name:
-                result += line_prefix_depth(self.depth + 1) + f"LogLine(\"[loop-round] {param} -> \");"
+            params = ", ".join(self.params_name)
+            result += line_prefix_depth(self.depth + 1) + f"LogLine(\"[loop-round] {params} -> \");"
 
 
 

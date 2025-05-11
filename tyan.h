@@ -16,8 +16,32 @@ namespace tyan {
     }
 
     template<>
+    inline std::string to_string<const int>(const int *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
     inline std::string to_string<int>(int *num) {
         return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<const std::string>(const std::string *str) {
+        return *str;
+    }
+    template<>
+    inline std::string to_string<std::string>(std::string *str) {
+        return *str;
+    }
+
+    template<>
+    inline std::string to_string<const char *>(const char * *str) {
+        return *str;
+    }
+
+    template<>
+    inline std::string to_string<char *>(char * *str) {
+        return *str;
     }
 
     class ThreadContext {
