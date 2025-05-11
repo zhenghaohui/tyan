@@ -67,10 +67,14 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
 
 def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, int):
     to_line = from_line
+    remain_bra_1 = 0  # (
+    remain_bra_2 = 0  # {
     while to_line < len(raw_content):
         line = raw_content[to_line]
+        remain_bra_1 += line.count("(") - line.count(")")
+        remain_bra_2 += line.count("{") - line.count("}")
         to_line += 1
-        if line.find(';') != -1:
+        if line.find(';') != -1 and not remain_bra_1 and not remain_bra_2:
             break
         special_macro = line.replace(" ", "")
         if special_macro.startswith("#"):
