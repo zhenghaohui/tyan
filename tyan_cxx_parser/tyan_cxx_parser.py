@@ -689,9 +689,13 @@ def main():
     parser = argparse.ArgumentParser(description='translate cxx src code into cxx-tyan src code')
     parser.add_argument('src_path', help='cxx源码输入文件路径')
     parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径')
+    parser.add_argument('-r', '--replace',  action='store_true', help="原地替换 src_path")
     args = parser.parse_args()
-
-    print(f"Parsing {args.src_path} > {args.dst_path} ...")
+    if args.replace:
+        args.dst_path = args.src_path
+        print(f"Parsing {args.src_path} (replace mode) ...")
+    else:
+        print(f"Parsing {args.src_path} > {args.dst_path} ...")
 
     # Read source code
     src_code = read_file(args.src_path)
