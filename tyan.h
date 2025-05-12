@@ -123,7 +123,7 @@ namespace tyan {
             std::string tmp;
             std::ostringstream oss;
             oss << std::string(ThreadContext::get().depth() << 1, ' ');
-            for (int i = 0; i < line.size(); i++) {
+            for (size_t i = 0; i < line.size(); i++) {
                 char c = line[i];
                 if (VAR_CHARSET.count(c)) {
                     tmp += c;
