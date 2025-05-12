@@ -43,6 +43,8 @@ class CodeItemType(Enum):
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
     RETURN  = "<return>"
+    BREAK  = "<break>"
+    CONTINUE  = "<continue>"
     PURE_DOMAIN = "<pure_domain>"
     ELSE = "<else>"
 
@@ -93,6 +95,8 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
         if special_macro in ["public:", "private:", "procted:"]:
             break
         if special_macro.startswith("case"):
+            break
+        if special_macro.startswith("default:"):
             break
         if special_macro.startswith("template<"):
             break
@@ -280,9 +284,19 @@ class CodeItem:
                     self.append_part(CodeItemAssert(self.body_content[from_line:to_line]))
                     continue
 
-                # schema: assert
-                if line.startswith("return"):
+                # schema: return
+                if line.startswith("return "):
                     self.append_part(CodeItemReturn(self.body_content[from_line:to_line]))
+                    continue
+
+                # schema: break;
+                if line.startswith("break;"):
+                    self.append_part(CodeItemBreak(self.body_content[from_line:to_line]))
+                    continue
+
+                # schema: continue;
+                if line.startswith("continue;"):
+                    self.append_part(CodeItemContinue(self.body_content[from_line:to_line]))
                     continue
 
                 # schema: =
@@ -564,10 +578,11 @@ class CodeItemSingleSentence(CodeItem):
         if add_tyan_code:
             for param in self.params:
                 result += line_prefix_depth(self.depth) + f"TyanCatch({param});"
-            if self.item_type != CodeItemType.RETURN:
-                result += self.log_line(self.depth)
-            else:
-                result = self.log_line(self.depth) + result
+            if self.item_type not in [CodeItemType.BREAK, CodeItemType.CONTINUE]: # not add LogLine(xxx)
+                if self.item_type != CodeItemType.RETURN:
+                    result += self.log_line(self.depth)
+                else:
+                    result = self.log_line(self.depth) + result
         return result
 
 class CodeItemNamespace(CodeItem):
@@ -691,6 +706,16 @@ class CodeItemReturn(CodeItemSingleSentence):
     def __init__(self, head_content: List[str]):
         super().__init__(head_content)
         self.item_type = CodeItemType.RETURN
+
+class CodeItemBreak(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.BREAK
+
+class CodeItemContinue(CodeItemSingleSentence):
+    def __init__(self, head_content: List[str]):
+        super().__init__(head_content)
+        self.item_type = CodeItemType.CONTINUE
 
 def remove_comment(content: str) -> str:
     # Remove line comments
