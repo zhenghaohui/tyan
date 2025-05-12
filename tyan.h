@@ -56,6 +56,36 @@ namespace tyan {
     }
 
     template<>
+    inline std::string to_string<const uint64_t>(const uint64_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<uint64_t>(uint64_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<const uint32_t>(const uint32_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<uint32_t>(uint32_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<const uint16_t>(const uint16_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<uint16_t>(uint16_t *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
     inline std::string to_string<const std::string>(const std::string *str) {
         return *str;
     }
