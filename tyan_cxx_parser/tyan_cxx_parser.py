@@ -542,10 +542,14 @@ class CodeItemWhile(CodeItem):
 class CodeItemSingleSentence(CodeItem):
     def __init__(self, head_content: List[str]):
         super().__init__(CodeItemType.SINGLE_SENTENCE, head_content, [])
+        self.params = []
 
     def print_head(self, add_tyan_code=False) -> str:
         result = super().print_head(add_tyan_code)
+
         if add_tyan_code:
+            for param in self.params:
+                result += line_prefix_depth(self.depth) + f"TyanCatch({param});"
             if self.item_type != CodeItemType.RETURN:
                 result += self.log_line(self.depth)
             else:
@@ -617,7 +621,6 @@ class CodeItemAssert(CodeItemSingleSentence):
 class CodeItemVarModify(CodeItemSingleSentence): # pure
     def __init__(self, head_content: List[str]):
         super().__init__(head_content)
-        self.param_name = None
 
     def _extract_param_from_line(self, line: str) -> str:
         line = line[:line.find("=")] # left part
@@ -642,13 +645,7 @@ class CodeItemVarModify(CodeItemSingleSentence): # pure
         return result
 
     def parse_head(self):
-        self.param_name = self._extract_param_from_line("".join(self.head_content))
-
-    def print_head(self, add_tyan_code=False) -> str:
-        result = super().print_head(add_tyan_code)
-        if add_tyan_code:
-            result += line_prefix_depth(self.depth) + f"TyanCatch({self.param_name});"
-        return result
+        self.params = [self._extract_param_from_line("".join(self.head_content))]
 
 class CodeItemVarSet(CodeItemVarModify):
     def __init__(self, head_content: List[str]):
