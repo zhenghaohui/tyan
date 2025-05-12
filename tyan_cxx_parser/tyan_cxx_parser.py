@@ -402,6 +402,10 @@ class CodeItemFunction(CodeItem):
             if pos != -1:
                 part = part[:pos]
             part = part[::-1].strip("{) ")
+            if part.count('<'):
+                continue
+            if part.count('>'):
+                continue
             name = ""
             for char in part:
                 if char not in PARAM_CHAR_SET:

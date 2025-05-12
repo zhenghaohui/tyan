@@ -105,7 +105,7 @@ namespace tyan {
         }
 
         std::string get_var(const std::string &name) {
-            if (this->var_map.contains(name)) {
+            if (this->var_map.count(name)) {
                 return name + ":" + this->var_map[name];
             } else {
                 return name;
@@ -125,7 +125,7 @@ namespace tyan {
             oss << std::string(ThreadContext::get().depth() << 1, ' ');
             for (int i = 0; i < line.size(); i++) {
                 char c = line[i];
-                if (VAR_CHARSET.contains(c)) {
+                if (VAR_CHARSET.count(c)) {
                     tmp += c;
                     continue;
                 }
