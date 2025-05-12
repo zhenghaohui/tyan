@@ -12,7 +12,7 @@
 namespace tyan {
     template<typename T>
     std::string to_string(T *num) {
-        return "<ptr>";
+        return "...";
     }
 
     template<>
