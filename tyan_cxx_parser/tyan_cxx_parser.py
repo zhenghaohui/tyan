@@ -38,6 +38,7 @@ class CodeItemType(Enum):
     VAR_SET = "<var_set>"
     STRUCT = "<struct>"
     CLASS = "<class>"
+    SWITCH = "<switch>"
     VAR_ADD_SELF = "<var_add_self>"
     VAR_SUB_SELF = "<var_sub_self>"
     ASSERT = "<assert>"
@@ -90,6 +91,8 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
         if special_macro.startswith("#"):
             break
         if special_macro in ["public:", "private:", "procted:"]:
+            break
+        if special_macro.startswith("case"):
             break
         if special_macro.startswith("template<"):
             break
@@ -213,6 +216,12 @@ class CodeItem:
             if line.startswith("class "):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemClass(self.body_content[from_line:head_end_line],
+                                                self.body_content[head_end_line:to_line]))
+                continue
+
+            if line.startswith("switch "):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemSwitch(self.body_content[from_line:head_end_line],
                                                 self.body_content[head_end_line:to_line]))
                 continue
 
@@ -582,6 +591,16 @@ class CodeItemStruct(CodeItem):
 class CodeItemClass(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.CLASS, head_content, body_content)
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        if any("{" in line for line in self.head_content):
+            result += line_prefix_depth(self.depth) + "}"
+        return result
+
+class CodeItemSwitch(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.SWITCH, head_content, body_content)
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
