@@ -390,6 +390,18 @@ def get_painter_guard_uuid() -> int:
     PainterGuard.painter_guard_uuid += 1
     return PainterGuard.painter_guard_uuid
 
+def format_tyan_catch(line_prefix: str, param: str) -> str:
+    # give up catch
+    if param.count("[") != param.count("]"):
+        return ""
+    if param.count("(") != param.count(")"):
+        return ""
+    if param.count("("):
+        return ""
+    if param in ["std", "int", "double"]:
+        return ""
+    return f"{line_prefix}TyanCatch({param});"
+
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
@@ -404,7 +416,7 @@ class CodeItemFunction(CodeItem):
             result += f"{line_prefix}/* params: " + ", ".join(self.params) + " */"
             result += f"{line_prefix}TyanMethod();"
             for param in self.params:
-                result += f"{line_prefix}TyanCatch({param});"
+                result += format_tyan_catch(line_prefix, param)
             result += self.log_line(self.depth + 1)
         return result
 
@@ -512,6 +524,7 @@ class CodeItemFor(CodeItem):
                 if len(typing_param) > 0:
                     self.params_name.append(typing_param)
                     typing_param = ""
+                    break
 
     def print_head(self, add_tyan_code=False) -> str:
         result = super().print_head(add_tyan_code)
@@ -525,7 +538,7 @@ class CodeItemFor(CodeItem):
                 return result
 
             for param in self.params_name:
-                result += line_prefix_depth(self.depth + 1) + f"TyanCatch({param});"
+                result += format_tyan_catch(line_prefix_depth(self.depth + 1), param)
 
             line_prefix = line_prefix_depth(self.depth + 1)
             guard_uuid = get_painter_guard_uuid()
@@ -583,7 +596,7 @@ class CodeItemSingleSentence(CodeItem):
 
         if add_tyan_code:
             for param in self.params:
-                result += line_prefix_depth(self.depth) + f"TyanCatch({param});"
+                result += format_tyan_catch(line_prefix_depth(self.depth), param)
             if self.item_type not in [CodeItemType.BREAK, CodeItemType.CONTINUE]: # not add LogLine(xxx)
                 if self.item_type != CodeItemType.RETURN:
                     result += self.log_line(self.depth)
