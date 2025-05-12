@@ -98,21 +98,28 @@ namespace tyan {
                 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '.'
             };
             std::string tmp;
             std::ostringstream oss;
             oss << std::string(ThreadContext::get().depth() << 1, ' ');
-            for (const char c: line) {
-                if (!VAR_CHARSET.contains(c)) {
-                    if (!tmp.empty()) {
-                        oss << get_var(tmp);
-                        tmp.clear();
-                    }
-                    oss << c;
+            for (int i = 0; i < line.size(); i++) {
+                char c = line[i];
+                if (VAR_CHARSET.contains(c)) {
+                    tmp += c;
                     continue;
                 }
-                tmp += c;
+                char c_next = i + 1 < line.size() ? line[i + 1] : ' ';
+                if (c == '-' && c_next == '>') {
+                    tmp += "->";
+                    i++;
+                    continue;
+                }
+                if (!tmp.empty()) {
+                    oss << get_var(tmp);
+                    tmp.clear();
+                }
+                oss << c;
             }
             if (!tmp.empty()) {
                 oss << get_var(tmp);
