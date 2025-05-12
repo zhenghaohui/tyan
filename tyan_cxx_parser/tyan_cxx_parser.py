@@ -14,6 +14,14 @@ PARAM_CHAR_SET = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
 }
 
+def check_condition_define(line: str) -> bool:
+    return (
+            line.startswith("#ifdef")
+            or line.startswith("#ifndef")
+            or line.startswith("#else")
+            or line.startswith("#elseif")
+            or line.startswith("#endif"))
+
 class CodeItemType(Enum):
     CXX_SOURCE = "<cxx_source>"
     INCLUDE = "<include>"
@@ -118,10 +126,7 @@ def found_op(line: str, op: str) -> bool:
 def short_head_content(content: List[str]) -> List[str] :
     updated_content = []
     for idx, line in enumerate(content):
-        is_condition_define = (line.startswith("#ifdef")
-                               or line.startswith("#else")
-                               or line.startswith("#elseif")
-                               or line.startswith("#endif"))
+        is_condition_define = check_condition_define(line)
         if (len(updated_content) == 0
                 or updated_content[-1].count("//")
                 or updated_content[-1].count("/*")
@@ -304,6 +309,7 @@ class CodeItem:
         log_line = log_line.replace('"', '\\"')
         log_line = log_line.replace('\n', '')
         log_line = log_line.replace('#ifdef', '')
+        log_line = log_line.replace('#ifndef', '')
         log_line = log_line.replace('#elseif', '')
         log_line = log_line.replace('#else', '')
         log_line = log_line.replace('#endif', '')
