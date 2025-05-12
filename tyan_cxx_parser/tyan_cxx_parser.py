@@ -75,7 +75,7 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
         remain_bra_1 += line.count("(") - line.count(")")
         remain_bra_2 += line.count("{") - line.count("}")
         to_line += 1
-        if line.find(';') != -1 and not remain_bra_1 and not remain_bra_2:
+        if line.endswith(';') and not remain_bra_1 and not remain_bra_2:
             break
         special_macro = line.replace(" ", "")
         if special_macro.startswith("#"):
@@ -96,6 +96,10 @@ def extract_skeleton(line: str) -> str:
     return result
 
 def found_op(line: str, op: str) -> bool:
+    seems_str_pos = line.find('\"')
+    if seems_str_pos != -1:
+        if seems_str_pos < line.find(op):
+            return False
     line = extract_skeleton(line)
     if len(line) <= len(op) + 2:
         return False
