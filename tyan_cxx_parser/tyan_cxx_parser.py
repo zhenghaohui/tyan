@@ -684,26 +684,20 @@ def standard_code(content: str) -> str:
     content = '\n'.join([content[i:i + 100] for i in range(0, len(content), 100)])
     return content
 
-
-def main():
-    parser = argparse.ArgumentParser(description='translate cxx src code into cxx-tyan src code')
-    parser.add_argument('src_path', help='cxx源码输入文件路径')
-    parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径')
-    parser.add_argument('-r', '--replace',  action='store_true', help="原地替换 src_path")
-    args = parser.parse_args()
-    if args.replace:
-        args.dst_path = args.src_path
-        print(f"Parsing {args.src_path} (replace mode) ...")
+def run_one_file(src_path: str, dst_path: str, replace_mode: bool):
+    if replace_mode:
+        dst_path = src_path
+        print(f"Parsing {src_path} (replace mode) ...")
     else:
-        print(f"Parsing {args.src_path} > {args.dst_path} ...")
+        print(f"Parsing {src_path} > {dst_path} ...")
 
     # Read source code
-    src_code = read_file(args.src_path)
+    src_code = read_file(src_path)
     src_code = remove_comment(src_code)
 
     # Standardize and process the code
     standardized_code = standard_code(src_code)
-    write_file(args.src_path + ".std", standardized_code)
+    write_file(src_path + ".std", standardized_code)
 
     formatted_code = format_code(src_code)
     raw_content = [line.strip() for line in formatted_code.split("\n") if line.strip()]
@@ -712,12 +706,20 @@ def main():
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    write_file(args.dst_path, code_tree.print(True))
-    write_file(args.dst_path + ".std", standard_code(src_code))
+    write_file(dst_path, code_tree.print(True))
+    write_file(dst_path + ".std", standard_code(src_code))
 
     # Verify that the standardized source and output match
-    assert read_file(args.src_path + ".std") == read_file(args.dst_path + ".std"), "Standardized files do not match!"
+    assert read_file(src_path + ".std") == read_file(dst_path + ".std"), "Standardized files do not match!"
 
+
+def main():
+    parser = argparse.ArgumentParser(description='translate cxx src code into cxx-tyan src code')
+    parser.add_argument('src_path', help='cxx源码输入文件路径')
+    parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径')
+    parser.add_argument('-r', '--replace',  action='store_true', help="原地替换 src_path")
+    args = parser.parse_args()
+    run_one_file(args.src_path, args.dst_path, args.replace)
 
 def read_file(file_path: str) -> str:
     """Reads and returns the content of a file."""
