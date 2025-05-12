@@ -305,15 +305,15 @@ class CodeItem:
         result = ""
         line_prefix = line_prefix_depth(depth)
         guard_uuid = get_painter_guard_uuid()
-        log_line = "".join(self.head_content)
+        log_line = "".join(self.head_content).strip("\n ")
         log_line = log_line.replace('"', '\\"')
         log_line = log_line.replace('\n', '')
-        log_line = log_line.replace('#ifdef', '')
-        log_line = log_line.replace('#ifndef', '')
-        log_line = log_line.replace('#elseif', '')
-        log_line = log_line.replace('#else', '')
-        log_line = log_line.replace('#endif', '')
-        if self.is_under_function:
+        log_line = re.sub(r'#ifdef.*', '', log_line)
+        log_line = re.sub(r'#ifndef.*', '', log_line)
+        log_line = re.sub(r'#elseif.*', '', log_line)
+        log_line = re.sub(r'#else.*', '', log_line)
+        log_line = re.sub(r'#endif.*', '', log_line)
+        if self.is_under_function and len(log_line):
             result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
             result += f"{line_prefix}TyanGuard({guard_uuid});"
