@@ -143,7 +143,7 @@ def short_head_content(content: List[str]) -> List[str] :
                 line = f"\n{line}\n"
             updated_content.append(line)
             continue
-        updated_content[-1] += line
+        updated_content[-1] += " " + line
     return updated_content
 
 
@@ -190,18 +190,6 @@ class CodeItem:
                 self.append_part(CodeItemCommentLine(self.body_content[from_line:to_line]))
                 continue
 
-            # schema4: function
-            if not self.is_under_function and line.find("(") != -1 and line.find(";") == -1:
-                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
-                head_content = self.body_content[from_line:head_end_line]
-                if head_content[-1][-1] == ';':
-                    to_line = head_end_line
-                    self.append_part(CodeItemSingleSentence(head_content))
-                else:
-                    self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
-                                                      self.body_content[head_end_line:to_line]))
-                continue
-
             # schema5: namespace
             if line.startswith("namespace"):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
@@ -244,6 +232,24 @@ class CodeItem:
             # schema7: right bracket
             if line.startswith("}"):
                 # just ignore
+                continue
+
+            # schema4: function
+            hit_function = False
+            for try_multi_line in range(1, 3):
+                temp_line = " ".join(self.body_content[from_line:from_line + try_multi_line])
+                if not self.is_under_function and temp_line.find("(") != -1 and temp_line.find(";") == -1:
+                    from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                    head_content = self.body_content[from_line:head_end_line]
+                    if head_content[-1][-1] == ';':
+                        to_line = head_end_line
+                        self.append_part(CodeItemSingleSentence(head_content))
+                    else:
+                        self.append_part(CodeItemFunction(self.body_content[from_line:head_end_line],
+                                                          self.body_content[head_end_line:to_line]))
+                    hit_function = True
+                    break
+            if hit_function:
                 continue
 
             # schema11: for
@@ -387,7 +393,7 @@ def get_painter_guard_uuid() -> int:
 class CodeItemFunction(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.FUNCTION, head_content, body_content)
-        self.head_content = ["".join([remove_comment(line) for line in self.head_content])]
+        self.head_content = [" ".join([remove_comment(line) for line in self.head_content])]
         self.params = None
         self.need_domain_guard = True
 
