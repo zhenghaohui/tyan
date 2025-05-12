@@ -26,6 +26,16 @@ namespace tyan {
     }
 
     template<>
+    inline std::string to_string<const bool>(const bool *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
+    inline std::string to_string<bool>(bool *num) {
+        return std::to_string(*num);
+    }
+
+    template<>
     inline std::string to_string<const double>(const double *num) {
         return std::to_string(*num);
     }

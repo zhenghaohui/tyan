@@ -291,7 +291,7 @@ class CodeItem:
                     continue
 
                 # schema: return
-                if line.startswith("return "):
+                if line.startswith("return ") or line.startswith("return;") or line.startswith("return{"):
                     self.append_part(CodeItemReturn(self.body_content[from_line:to_line]))
                     continue
 
