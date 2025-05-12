@@ -436,7 +436,7 @@ class CodeItemFunction(CodeItem):
                 name += char
             name = name[::-1]
             # print("!!! : " + name)
-            if len(name) > 0:
+            if len(name) > 0 and name not in ["bool", "int", "double"]:
                 result.append(name)
         return result
 
@@ -755,7 +755,7 @@ def run_one_file(src_path: str, dst_path: str, replace_mode: bool):
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    # write_file(dst_path, code_tree.print(True))
+    write_file(dst_path, code_tree.print(True))
     # write_file(dst_path + ".std", standard_code(src_code))
 
     # Verify that the standardized source and output match
