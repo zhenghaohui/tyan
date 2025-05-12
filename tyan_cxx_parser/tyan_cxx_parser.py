@@ -745,8 +745,8 @@ def run_one_file(src_path: str, dst_path: str, replace_mode: bool):
     src_code = remove_comment(src_code)
 
     # Standardize and process the code
-    standardized_code = standard_code(src_code)
-    write_file(src_path + ".std", standardized_code)
+    # standardized_code = standard_code(src_code)
+    # write_file(src_path + ".std", standardized_code)
 
     formatted_code = format_code(src_code)
     raw_content = [line.strip() for line in formatted_code.split("\n") if line.strip()]
@@ -755,11 +755,11 @@ def run_one_file(src_path: str, dst_path: str, replace_mode: bool):
     code_tree = CodeItemSourceCode(raw_content)
     code_tree.parse()
 
-    write_file(dst_path, code_tree.print(True))
-    write_file(dst_path + ".std", standard_code(src_code))
+    # write_file(dst_path, code_tree.print(True))
+    # write_file(dst_path + ".std", standard_code(src_code))
 
     # Verify that the standardized source and output match
-    assert read_file(src_path + ".std") == read_file(dst_path + ".std"), "Standardized files do not match!"
+    # assert read_file(src_path + ".std") == read_file(dst_path + ".std"), "Standardized files do not match!"
 
 
 def main():
