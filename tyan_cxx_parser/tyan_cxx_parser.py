@@ -114,7 +114,16 @@ def found_op(line: str, op: str) -> bool:
 def short_head_content(content: List[str]) -> List[str] :
     updated_content = []
     for idx, line in enumerate(content):
-        if len(updated_content) == 0 or updated_content[-1].count("//") or updated_content[-1].count("/*"):
+        is_condition_define = (line.startswith("#ifdef")
+                               or line.startswith("#else")
+                               or line.startswith("#elseif")
+                               or line.startswith("#endif"))
+        if (len(updated_content) == 0
+                or updated_content[-1].count("//")
+                or updated_content[-1].count("/*")
+                or is_condition_define):
+            if is_condition_define:
+                line = f"\n{line}\n"
             updated_content.append(line)
             continue
         updated_content[-1] += line
@@ -288,6 +297,11 @@ class CodeItem:
         guard_uuid = get_painter_guard_uuid()
         log_line = "".join(self.head_content)
         log_line = log_line.replace('"', '\\"')
+        log_line = log_line.replace('\n', '')
+        log_line = log_line.replace('#ifdef', '')
+        log_line = log_line.replace('#elseif', '')
+        log_line = log_line.replace('#else', '')
+        log_line = log_line.replace('#endif', '')
         if self.is_under_function:
             result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
