@@ -259,30 +259,31 @@ class CodeItem:
             from_line, to_line = go_through_single_sentence(from_line, self.body_content)
             line = "".join(self.body_content[from_line:to_line])
 
-            # schema: assert
-            if line.startswith("assert("):
-                self.append_part(CodeItemAssert(self.body_content[from_line:to_line]))
-                continue
+            if self.is_under_function: # prevent global namespace var
+                # schema: assert
+                if line.startswith("assert("):
+                    self.append_part(CodeItemAssert(self.body_content[from_line:to_line]))
+                    continue
 
-            # schema: assert
-            if line.startswith("return"):
-                self.append_part(CodeItemReturn(self.body_content[from_line:to_line]))
-                continue
+                # schema: assert
+                if line.startswith("return"):
+                    self.append_part(CodeItemReturn(self.body_content[from_line:to_line]))
+                    continue
 
-            # schema: =
-            if found_op(line, "="):
-                self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
-                continue
+                # schema: =
+                if found_op(line, "="):
+                    self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
+                    continue
 
-            # schema: +=
-            if found_op(line, "+="):
-                self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
-                continue
+                # schema: +=
+                if found_op(line, "+="):
+                    self.append_part(CodeItemVarAddSelf(self.body_content[from_line:to_line]))
+                    continue
 
-            # schema10: -=
-            if found_op(line, "-="):
-                self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
-                continue
+                # schema10: -=
+                if found_op(line, "-="):
+                    self.append_part(CodeItemVarSubSelf(self.body_content[from_line:to_line]))
+                    continue
 
             self.append_part(CodeItemSingleSentence(self.body_content[from_line:to_line]))
 
