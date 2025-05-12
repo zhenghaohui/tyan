@@ -1,4 +1,5 @@
 import argparse
+import os
 from idlelib.debugger_r import restart_subprocess_debugger
 from math import remainder
 from types import new_class
@@ -715,11 +716,35 @@ def run_one_file(src_path: str, dst_path: str, replace_mode: bool):
 
 def main():
     parser = argparse.ArgumentParser(description='translate cxx src code into cxx-tyan src code')
-    parser.add_argument('src_path', help='cxx源码输入文件路径')
-    parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径')
-    parser.add_argument('-r', '--replace',  action='store_true', help="原地替换 src_path")
+
+    # 添加位置参数
+    parser.add_argument('src_path', help='cxx源码输入文件路径或目录路径（当使用 -d/--dir 时）')
+    parser.add_argument('dst_path', help='cxx-tyan源码输出文件路径（仅在未使用 -r/--replace 时有效）')
+
+    # 添加可选参数
+    parser.add_argument('-r', '--replace', action='store_true', help="原地替换 src_path")
+    parser.add_argument('-d', '--dir', action='store_true', help="将 src_path 视为目录路径，并递归处理所有文件")
+
+    # 解析参数
     args = parser.parse_args()
-    run_one_file(args.src_path, args.dst_path, args.replace)
+
+    # 检查参数约束
+    if args.dir and not args.replace:
+        parser.error("-d/--dir 必须与 -r/--replace 一起使用")
+
+    # 处理目录模式
+    if args.dir:
+        process_directory(args.src_path)
+    else:
+        # 单文件模式
+        run_one_file(args.src_path, args.dst_path, args.replace)
+
+def process_directory(directory_path):
+    """递归处理目录中的所有文件"""
+    for root, _, files in os.walk(directory_path):
+        for file_name in files:
+            src_file_path = os.path.join(root, file_name)
+            run_one_file(src_file_path, src_file_path, True)
 
 def read_file(file_path: str) -> str:
     """Reads and returns the content of a file."""
