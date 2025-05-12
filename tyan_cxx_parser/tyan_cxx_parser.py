@@ -622,15 +622,22 @@ class CodeItemVarModify(CodeItemSingleSentence): # pure
     def _extract_param_from_line(self, line: str) -> str:
         line = line[:line.find("=")] # left part
         line = line[::-1] # reverse
+        line += ' '
         cur = 0
-        while cur < len(line) and line[cur] not in PARAM_CHAR_SET: # drop others
+        while cur + 1 < len(line) and line[cur] not in PARAM_CHAR_SET: # drop others
             cur += 1
             continue
         result = ""
-        while cur < len(line) and line[cur] in PARAM_CHAR_SET: # collect
-            result += line[cur]
-            cur += 1
-            continue
+        while cur + 1 < len(line):
+            if line[cur] in PARAM_CHAR_SET: # collect
+                result += line[cur]
+                cur += 1
+                continue
+            if line[cur:cur+2] == '>-':  # due to reversed
+                result += line[cur:cur+2]
+                cur += 2
+                continue
+            break
         result = result[::-1] # reverse back
         return result
 
