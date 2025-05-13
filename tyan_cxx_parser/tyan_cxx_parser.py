@@ -810,8 +810,13 @@ def process_directory(directory_path):
     """递归处理目录中的所有文件"""
     for root, _, files in os.walk(directory_path):
         for file_name in files:
-            src_file_path = os.path.join(root, file_name)
-            run_one_file(src_file_path, src_file_path, True)
+            if file_name.endswith("test.cc"):
+                continue
+            if file_name.endswith("test.cpp"):
+                continue
+            if file_name.endswith(".cc") or file_name.endswith(".cpp"):
+                src_file_path: str = os.path.join(root, file_name)
+                run_one_file(src_file_path, src_file_path, True)
 
 def read_file(file_path: str) -> str:
     """Reads and returns the content of a file."""
