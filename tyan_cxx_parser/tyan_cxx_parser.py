@@ -271,6 +271,8 @@ class CodeItem:
                 can_try = not self.get_is_under_function()
                 if not can_try and temp_line.startswith("auto ") and temp_line.find("](") != -1:
                     can_try = True
+                if temp_line.count("overload { "):
+                    break
 
                 if can_try and temp_line.find("(") != -1 and temp_line.find(";") == -1:
                     from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
