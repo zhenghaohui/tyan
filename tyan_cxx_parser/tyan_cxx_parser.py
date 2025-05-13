@@ -280,6 +280,13 @@ class CodeItem:
                                              self.body_content[head_end_line:to_line]))
                 continue
 
+            # schema11: do {} while
+            if line == "do" and self.body_content[from_line + 1] == '{':
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemWhile(self.body_content[from_line:head_end_line],
+                                             self.body_content[head_end_line:to_line]))
+                continue
+
             # schema: pure domain
             if line == "{":
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
