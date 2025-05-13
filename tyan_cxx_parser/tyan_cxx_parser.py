@@ -205,7 +205,7 @@ class CodeItem:
                 continue
 
             # schema: namespace
-            if line.startswith("extern ") and line.count("{"):
+            if line.startswith("extern ") and self.body_content[from_line + 1].count("{"):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemExtern(self.body_content[from_line:head_end_line],
                                                 self.body_content[head_end_line:to_line]))
@@ -450,11 +450,18 @@ class CodeItemFunction(CodeItem):
         while depth > 0:
             depth += (content[param_end] == '(') - (content[param_end] == ')')
             param_end += 1
-        content = content[param_beg:param_end]
+        content = content[param_beg+1:param_end]
 
         parts = content.split(",")
         result = []
+        remain_par = 0
         for part in parts:
+            need_skip = remain_par > 0
+            remain_par += part.count("(") - part.count(")")
+            need_skip |= remain_par > 0
+            if need_skip > 0:
+                continue
+
             pos = part.find('=') # drop right part
             if pos != -1:
                 part = part[:pos]
