@@ -143,7 +143,10 @@ def short_head_content(content: List[str]) -> List[str] :
                 line = f"\n{line}\n"
             updated_content.append(line)
             continue
-        updated_content[-1] += " " + line
+        if line.startswith("."):
+            updated_content[-1] += line
+        else:
+            updated_content[-1] += " " + line
     return updated_content
 
 
@@ -398,7 +401,9 @@ def format_tyan_catch(line_prefix: str, param: str) -> str:
         return ""
     if param.count("("):
         return ""
-    if param in ["std", "int", "double"]:
+    if param in ["std", "int", "double", "void"]:
+        return ""
+    if param.endswith("[]"):
         return ""
     return f"{line_prefix}TyanCatch({param});"
 
@@ -443,6 +448,8 @@ class CodeItemFunction(CodeItem):
             if pos != -1:
                 part = part[:pos]
             part = part[::-1].strip("{) ")
+            if part.count(' ') == 0:
+                continue
             if part.count('<'):
                 continue
             if part.count('>'):
