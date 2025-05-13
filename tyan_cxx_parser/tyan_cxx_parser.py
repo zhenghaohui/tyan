@@ -57,8 +57,8 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
     remain_depth = line.count(left_bracket) - line.count(right_bracket)
     remain_depth_par = line.count("(") - line.count(")")
     # go through function header
-    while remain_depth == 0:
-        if line.count(left_bracket):
+    while remain_depth == 0 or remain_depth_par != 0:
+        if remain_depth_par == 0 and line.count(left_bracket):
             break
         if line[-1] == ";" and not remain_depth_par:
             break
@@ -220,7 +220,7 @@ class CodeItem:
                                                 self.body_content[head_end_line:to_line]))
                 continue
 
-            if line.startswith("if (") :
+            if line.startswith("if (") or line.startswith("if("):
                 # todo: simple if without bracket
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
