@@ -387,7 +387,7 @@ class CodeItem:
         log_line = re.sub(r'#else.*', '', log_line)
         log_line = re.sub(r'#endif.*', '', log_line)
         if self.get_is_under_function() and len(log_line):
-            if not log_line in ["FALLTHROUGH_INTENDED;"]:
+            if not log_line in ["FALLTHROUGH_INTENDED;"] and not log_line.startswith("fprintf("):
                 result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
             result += f"{line_prefix}TyanGuard({guard_uuid});"
@@ -692,7 +692,8 @@ class CodeItemStruct(CodeItem):
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
-        result += "\n" + "  " * self.depth + "}"
+        if any("{" in line for line in self.head_content):
+            result += line_prefix_depth(self.depth) + "}"
         return result
 
 class CodeItemClass(CodeItem):
