@@ -35,6 +35,7 @@ class CodeItemType(Enum):
     FOR = "<for>"
     SINGLE_SENTENCE = "<single-sentence>"
     NAMESPACE = "<namespace>"
+    EXTERN = "<extern>"
     VAR_SET = "<var_set>"
     STRUCT = "<struct>"
     CLASS = "<class>"
@@ -196,11 +197,18 @@ class CodeItem:
                 self.append_part(CodeItemCommentLine(self.body_content[from_line:to_line]))
                 continue
 
-            # schema5: namespace
+            # schema: namespace
             if line.startswith("namespace"):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemNamespace(self.body_content[from_line:head_end_line],
                                                    self.body_content[head_end_line:to_line]))
+                continue
+
+            # schema: namespace
+            if line.startswith("extern "):
+                from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
+                self.append_part(CodeItemExtern(self.body_content[from_line:head_end_line],
+                                                self.body_content[head_end_line:to_line]))
                 continue
 
             # schema: struct
@@ -617,6 +625,15 @@ class CodeItemSingleSentence(CodeItem):
 class CodeItemNamespace(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.NAMESPACE, head_content, body_content)
+
+    def print(self, add_tyan_code=False) -> str:
+        result = super().print(add_tyan_code)
+        result += "\n" + "  " * self.depth + "}"
+        return result
+
+class CodeItemExtern(CodeItem):
+    def __init__(self, head_content: List[str], body_content: List[str]):
+        super().__init__(CodeItemType.EXTERN, head_content, body_content)
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
