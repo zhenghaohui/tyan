@@ -157,13 +157,16 @@ class CodeItem:
         self.body_content: List[str] = body_content
         self.parts: List[CodeItem] = []
         self.parent: "CodeItem" = None
-        self.is_under_function = False
+        self.is_under_function = False # pls use self.get_is_under_function(), some class might overload this
         self.need_domain_guard = False
         self.depth = 0
 
+    def get_is_under_function(self):
+        return self.is_under_function
+
     def append_part(self, new_item: "CodeItem"):
         new_item.parent = self
-        new_item.is_under_function = self.is_under_function or isinstance(new_item, CodeItemFunction)
+        new_item.is_under_function = self.get_is_under_function() or isinstance(new_item, CodeItemFunction)
         new_item.depth = self.depth + 1
         self.parts.append(new_item)
 
@@ -241,7 +244,7 @@ class CodeItem:
             hit_function = False
             for try_multi_line in range(1, 3):
                 temp_line = " ".join(self.body_content[from_line:from_line + try_multi_line])
-                if not self.is_under_function and temp_line.find("(") != -1 and temp_line.find(";") == -1:
+                if not self.get_is_under_function() and temp_line.find("(") != -1 and temp_line.find(";") == -1:
                     from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                     head_content = self.body_content[from_line:head_end_line]
                     if head_content[-1][-1] == ';':
@@ -287,7 +290,7 @@ class CodeItem:
             from_line, to_line = go_through_single_sentence(from_line, self.body_content)
             line = "".join(self.body_content[from_line:to_line])
 
-            if self.is_under_function: # prevent global namespace var
+            if self.get_is_under_function(): # prevent global namespace var
                 # schema: assert
                 if line.startswith("assert("):
                     self.append_part(CodeItemAssert(self.body_content[from_line:to_line]))
@@ -346,7 +349,7 @@ class CodeItem:
         log_line = re.sub(r'#elseif.*', '', log_line)
         log_line = re.sub(r'#else.*', '', log_line)
         log_line = re.sub(r'#endif.*', '', log_line)
-        if self.is_under_function and len(log_line):
+        if self.get_is_under_function() and len(log_line):
             result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
             result += f"{line_prefix}TyanGuard({guard_uuid});"
@@ -623,6 +626,11 @@ class CodeItemNamespace(CodeItem):
 class CodeItemStruct(CodeItem):
     def __init__(self, head_content: List[str], body_content: List[str]):
         super().__init__(CodeItemType.STRUCT, head_content, body_content)
+        self.is_under_function = False
+
+    def get_is_under_function(self):
+        # Function > struct > Function is allow
+        return False
 
     def print(self, add_tyan_code=False) -> str:
         result = super().print(add_tyan_code)
