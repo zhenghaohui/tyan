@@ -78,6 +78,22 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
 
     return from_line, head_end_line, to_line
 
+def line_count_pro(line: str, char: chr) -> int:
+    import re
+
+    # Step 1: 使用正则表达式移除所有被双引号包裹的内容，包括转义的双引号
+    def remove_quoted_content(s: str) -> str:
+        # 正则表达式匹配 "..." 或 "...\"..."
+        pattern = r'"(?:\\.|[^"\\])*"'
+        return re.sub(pattern, '', s)
+
+    # Step 2: 移除双引号包裹的内容
+    cleaned_line = remove_quoted_content(line)
+
+    # Step 3: 统计指定字符的出现次数
+    count = cleaned_line.count(char)
+
+    return count
 
 def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, int):
     to_line = from_line
@@ -85,7 +101,7 @@ def go_through_single_sentence(from_line: int, raw_content: List[str]) -> (int, 
     remain_bra_2 = 0  # {
     while to_line < len(raw_content):
         line = raw_content[to_line]
-        remain_bra_1 += line.count("(") - line.count(")")
+        remain_bra_1 += line_count_pro(line, "(") - line_count_pro(line, ")")
         remain_bra_2 += line.count("{") - line.count("}")
         to_line += 1
         if line.endswith(';') and not remain_bra_1 and not remain_bra_2:
