@@ -320,7 +320,7 @@ class CodeItem:
                     continue
 
                 # schema: =
-                if found_op(line, "="):
+                if found_op(line, "=") and not line.startswith("using "):
                     self.append_part(CodeItemVarSet(self.body_content[from_line:to_line]))
                     continue
 
