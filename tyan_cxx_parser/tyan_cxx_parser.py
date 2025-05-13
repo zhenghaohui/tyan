@@ -529,7 +529,7 @@ class CodeItemFor(CodeItem):
         content = "".join(self.head_content)
         candidate_prefix = content[:20].replace(" ", "")
         if candidate_prefix.startswith("for(auto") or candidate_prefix.startswith("for(constauto"):
-            pos = content.find("auto")
+            pos = content.find("auto ")
             pos_end = content.find(":", pos)
             if pos_end == -1:
                 return
