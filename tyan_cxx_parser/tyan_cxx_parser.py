@@ -231,7 +231,7 @@ class CodeItem:
                                                 self.body_content[head_end_line:to_line]))
                 continue
 
-            if line.startswith("if (") or line.startswith("if("):
+            if line.startswith("if (") or line.startswith("if(") or line.startswith("if constexpr ("):
                 # todo: simple if without bracket
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemIf(self.body_content[from_line:head_end_line],
