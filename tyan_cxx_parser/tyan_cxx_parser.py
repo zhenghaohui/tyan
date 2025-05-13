@@ -58,8 +58,8 @@ def go_through_head_and_body(from_line: int, to_line: int, raw_content: List[str
     remain_depth = line.count(left_bracket) - line.count(right_bracket)
     remain_depth_par = line.count("(") - line.count(")")
     # go through function header
-    while remain_depth == 0 or remain_depth_par != 0:
-        if remain_depth_par == 0 and line.count(left_bracket):
+    while remain_depth == 0 or remain_depth_par != 0 or (line == '{' and raw_content[to_line] == '}' and raw_content[to_line + 1].startswith(",")):
+        if remain_depth_par == 0 and line.count(left_bracket) and not raw_content[to_line] == '}':
             break
         if line[-1] == ";" and not remain_depth_par:
             break
@@ -440,7 +440,7 @@ def format_tyan_catch(line_prefix: str, param: str) -> str:
         return ""
     if param.count("("):
         return ""
-    if param in ["std", "int", "double", "void", "this"]:
+    if param in ["std", "int", "double", "void", "this", "const", "except", "throw"]:
         return ""
     if param.endswith("[]"):
         return ""
@@ -465,6 +465,8 @@ class CodeItemFunction(CodeItem):
         return result
 
     def print(self, add_tyan_code=False) -> str:
+        if self.head_content[0].startswith("std::function<"):
+            add_tyan_code = False
         result = super().print(add_tyan_code)
         result += "\n"
         result += "  " * self.depth
