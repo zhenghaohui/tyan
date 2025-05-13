@@ -205,7 +205,7 @@ class CodeItem:
                 continue
 
             # schema: namespace
-            if line.startswith("extern "):
+            if line.startswith("extern ") and line.count("{"):
                 from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                 self.append_part(CodeItemExtern(self.body_content[from_line:head_end_line],
                                                 self.body_content[head_end_line:to_line]))
@@ -486,6 +486,8 @@ class CodeItemIf(CodeItem):
         self.need_domain_guard = True
 
     def print_head(self, add_tyan_code=False) -> str:
+        if len(self.body_content) == 0:
+            add_tyan_code = False
         result = super().print_head(add_tyan_code)
         if add_tyan_code:
             result += self.log_line(self.depth + 1)
@@ -842,6 +844,8 @@ def process_directory(directory_path):
     """递归处理目录中的所有文件"""
     for root, _, files in os.walk(directory_path):
         for file_name in files:
+            if file_name.count("test"):
+                continue
             if file_name.endswith("test.cc"):
                 continue
             if file_name.endswith("test.cpp"):
