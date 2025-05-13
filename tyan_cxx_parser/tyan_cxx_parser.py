@@ -250,9 +250,13 @@ class CodeItem:
 
             # schema4: function
             hit_function = False
-            for try_multi_line in range(1, 3):
+            for try_multi_line in range(1, 4):
                 temp_line = " ".join(self.body_content[from_line:from_line + try_multi_line])
-                if not self.get_is_under_function() and temp_line.find("(") != -1 and temp_line.find(";") == -1:
+                can_try = not self.get_is_under_function()
+                if not can_try and temp_line.startswith("auto ") and temp_line.find("](") != -1:
+                    can_try = True
+
+                if can_try and temp_line.find("(") != -1 and temp_line.find(";") == -1:
                     from_line, head_end_line, to_line = go_through_head_and_body(from_line, to_line, self.body_content)
                     head_content = self.body_content[from_line:head_end_line]
                     if head_content[-1][-1] == ';':
@@ -365,7 +369,8 @@ class CodeItem:
         log_line = re.sub(r'#else.*', '', log_line)
         log_line = re.sub(r'#endif.*', '', log_line)
         if self.get_is_under_function() and len(log_line):
-            result += f"{line_prefix}LogLine(\"{log_line}\");"
+            if not log_line in ["FALLTHROUGH_INTENDED;"]:
+                result += f"{line_prefix}LogLine(\"{log_line}\");"
         if self.need_domain_guard:
             result += f"{line_prefix}TyanGuard({guard_uuid});"
         return result
@@ -419,7 +424,7 @@ def format_tyan_catch(line_prefix: str, param: str) -> str:
         return ""
     if param.count("("):
         return ""
-    if param in ["std", "int", "double", "void"]:
+    if param in ["std", "int", "double", "void", "this"]:
         return ""
     if param.endswith("[]"):
         return ""
